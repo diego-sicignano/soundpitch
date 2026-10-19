@@ -1,0 +1,8 @@
+backend/.venv/
+backend/.env
+backend/.pytest_cache/
+backend/.ruff_cache/
+__pycache__/
+node_modules/
+test-results/
+playwright-report/
