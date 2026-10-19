@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SoundPitch: follow the match by ear</title>
+    <meta
+      name="description"
+      content="Audio description, ball sound and captions for a football match, built from match events."
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <a class="skip" href="#player">Skip to the player</a>
+    <header class="top">
+      <h1>SoundPitch</h1>
+      <p class="tagline">
+        Follow the match by ear. Every description is checked against the match events before you hear it.
+      </p>
+    </header>
+
+    <main id="main">
+      <section class="panel" aria-labelledby="player-h" id="player" tabindex="-1">
+        <h2 id="player-h">Player</h2>
+        <div class="controls">
+          <button id="play" type="button" data-testid="play" class="primary">Play</button>
+          <p id="status" role="status" data-testid="status">Loading the match</p>
+        </div>
+        <p id="scoreline" class="scoreline" data-testid="scoreline">Northgate 0 – 0 Harbour</p>
+        <p id="captions" class="captions" data-testid="captions"></p>
+        <p class="hint">Press the space bar to play or pause.</p>
+      </section>
+
+      <section class="panel" aria-labelledby="settings-h">
+        <h2 id="settings-h">Listening settings</h2>
+        <form id="settings" onsubmit="return false">
+          <div class="field">
+            <label for="preset">Match moment</label>
+            <select id="preset" data-testid="preset"></select>
+          </div>
+          <div class="field">
+            <label for="detail">How much to describe</label>
+            <select id="detail" data-testid="detail">
+              <option value="essential">Essential: goals and chances</option>
+              <option value="standard" selected>Standard: plus build-up and turnovers</option>
+              <option value="full">Full: every phase of play</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="lang">Language</label>
+            <select id="lang" data-testid="lang">
+              <option value="en" selected>English</option>
+              <option value="it">Italiano</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="output">Voice</label>
+            <select id="output" data-testid="output">
+              <option value="browser" selected>Browser voice</option>
+              <option value="azure">Azure neural voice</option>
+              <option value="screenreader">My own screen reader (text only)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="rate">Speech speed <output id="rate-value" for="rate">1.0</output></label>
+            <input id="rate" data-testid="rate" type="range" min="0.5" max="2" step="0.1" value="1" />
+          </div>
+          <div class="checks">
+            <label class="check"><input id="toggle-earcons" data-testid="toggle-earcons" type="checkbox" checked /> Ball sound: the sound moves left and right with the ball</label>
+            <label class="check"><input id="toggle-calm" data-testid="toggle-calm" type="checkbox" /> Calm mode: fewer sounds, slower voice</label>
+            <label class="check"><input id="toggle-captions" data-testid="toggle-captions" type="checkbox" checked /> Large captions</label>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel" aria-labelledby="pitch-h">
+        <h2 id="pitch-h">Pitch and timing</h2>
+        <div class="pitch-wrap" data-testid="pitch" id="pitch">
+          <svg viewBox="0 0 105 68" aria-hidden="true" focusable="false">
+            <rect width="105" height="68" class="grass" />
+            <g class="lines">
+              <rect x="1" y="1" width="103" height="66" />
+              <line x1="52.5" y1="1" x2="52.5" y2="67" />
+              <circle cx="52.5" cy="34" r="9" />
+              <rect x="1" y="14" width="16" height="40" />
+              <rect x="88" y="14" width="16" height="40" />
+            </g>
+            <circle id="ball" data-testid="ball" class="ball" cx="52.5" cy="34" r="1.6" />
+          </svg>
+        </div>
+        <div id="timeline" class="timeline" data-testid="timeline" aria-hidden="true">
+          <div id="playhead" class="playhead"></div>
+        </div>
+        <p class="hint">Blue blocks show when the voice speaks; the gaps are silence, left for the crowd and the ball sound.</p>
+      </section>
+
+      <section class="panel" aria-labelledby="transcript-h">
+        <h2 id="transcript-h">Transcript</h2>
+        <div class="scroller" tabindex="0" role="group" aria-label="Transcript lines, scrollable">
+          <ol id="transcript" data-testid="transcript" class="transcript"></ol>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="report-h">
+        <h2 id="report-h">How it was checked</h2>
+        <dl id="report" data-testid="report" class="report"></dl>
+        <details>
+          <summary>Pipeline steps</summary>
+          <ol id="trace" class="trace"></ol>
+        </details>
+      </section>
+    </main>
+
+    <div id="live-region" data-testid="live-region" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+    <script src="app.js"></script>
+  </body>
+</html>
