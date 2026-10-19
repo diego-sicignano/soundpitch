@@ -2,8 +2,6 @@
 
 Audio-first match companion for blind and low-vision fans, built for the Microsoft x Premier League "Inside the Game" hackathon (deadline 27 Oct 2026, 23:59 Pacific). Python 3.13 (FastAPI, Pydantic v2) in `backend/`, plain HTML/CSS/JS in `frontend/`, Playwright in `e2e/`. Windows 11, Windows PowerShell 5.1.
 
-This repository is a clean, separate project. Do not copy code, docs or history from any other project into it.
-
 ## Spec-driven development
 
 The spec is the authority; code follows it.

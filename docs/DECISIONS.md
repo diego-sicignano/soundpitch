@@ -33,7 +33,3 @@ The page works for anyone with no key and no cost. Azure AI Speech needs a key, 
 ## D8. English and Italian only (2026-10-19)
 
 The rules ask for multi-language output; two languages show it without diluting the verifier. The verifier is language independent, so adding a language means adding templates. **Consequence:** other languages are out of scope for the hackathon.
-
-## D9. Separate repository (2026-10-19)
-
-SoundPitch started in the same folder as an earlier project and was moved to its own repository before any history was published. It contains nothing from that project. **Consequence:** the repository is ready to be made public as is.

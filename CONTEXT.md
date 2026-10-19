@@ -32,7 +32,6 @@ Glossary and the map of the data contracts. Behaviour is in [`SPEC.md`](SPEC.md)
 | **Profile** | The listener's settings: detail, language, ball sound, calm mode, speech rate (and, later, a player to follow). |
 | **Cue sheet** | The machine-readable, versioned export of a session for graphics and captioning systems (SPEC §13). |
 | **Scenario** | A test mode that plants errors: `bad_then_good` (wrong once) and `always_bad` (always wrong). |
-| **Must-say** | See priority. |
 
 ## Contract map (`backend/app/contracts.py`)
 
