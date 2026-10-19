@@ -1,0 +1,11 @@
+backend/.venv/
+backend/.env
+backend/.pytest_cache/
+backend/.ruff_cache/
+__pycache__/
+node_modules/
+test-results/
+playwright-report/
+.claude/settings.local.json
+backend/out.mp3
+out.mp3
