@@ -2,7 +2,7 @@
 
 Deadline: **27 Oct 2026, 23:59 Pacific** (about 07:59 on 28 Oct in Italy). Registration closes **20 Oct, 12:00 Pacific**. Judges need the demo online **until 10 Nov**. See [`docs/hackathon/`](docs/hackathon/).
 
-Judging weights five criteria at 20% each, and ties go to criterion 1 (technology), so the items are ordered by what moves the score.
+Judging weights five criteria at 20% each and ties go to criterion 1 (technology), so tickets are ordered by what moves the score. Each ticket lives in [`docs/tickets/`](docs/tickets/), cites the acceptance rows of [`SPEC.md`](SPEC.md) it satisfies, and is done only when its verification commands exit 0.
 
 ## Done (with tests)
 
@@ -19,35 +19,37 @@ Judging weights five criteria at 20% each, and ties go to criterion 1 (technolog
 | S9 | axe-core clean before and after playback |
 | S10 | Evaluation harness with published counts (`docs/evaluation.md`) |
 
-## To do, in order
+## Tickets
 
-| # | Task | Why it matters | Done when |
-|---|---|---|---|
-| R1 | **Register** on the hackathon site (before 20 Oct 12:00 Pacific) | Without it you cannot submit | Confirmation seen |
-| R2 | **Foundry describer** (`app/foundry.py`, `SOUNDPITCH_LLM=foundry`): one batched call per window, structured output (`full`, `short`, `refs`), prompt with the style rules | Criterion 1 and the Foundry prize; today the model is only a stand-in | Unit tests with a fake client; one real run, first-attempt pass rate written to `docs/evaluation.md` |
-| R3 | **Microsoft Agent Framework workflow**: detector -> describer agent -> verifier -> conditional retry edge (max 2) -> fallback -> timing. Check the installed API with Context7 first | Criteria 1 and 2, Multi-Agent prize | Same acceptance rows pass through the workflow; trace shows the agents |
-| R4 | **Azure AI Speech with a real key**: voices, rate, prefetch, cost guard | A named Azure technology, and the heart of the demo | A real mp3 plays in the page; `curl` recorded in `docs/` |
-| R5 | **Cue sheet**: `GET /api/cuesheet` with a versioned JSON Schema (clock, type, text, duration, language) | The rules ask for timed, machine-readable output for overlays | Schema test; cue sheet validates for every preset |
-| R6 | **Deploy** to Azure Container Apps (Dockerfile exists, not built here yet), managed identity, budget alert | Judges need a public, free demo until 10 Nov; Cloud Native prize | Public URL works from a clean browser |
-| R7 | **Demo video** under 2 minutes, public on YouTube or Vimeo | Criterion 4; judges may only watch this | URL in the README |
-| R8 | **Pitch text and README screenshots** | Criteria 3 and 4 | Pasted into the submission form |
-| R9 | Optional: **MCP server** exposing the match tools; **player-focus mode** ("follow Marsh") | Criterion 2; a named idea in the rules | Tests; shown in the video only if finished |
-| R10 | **Make the repository public** and tick every box in [`SUBMISSION_CHECKLIST.md`](docs/hackathon/SUBMISSION_CHECKLIST.md) | Rules 4.4: the repo must be public | Checklist complete, a day before the deadline |
+| ID | Ticket | Depends on | Acceptance | Status |
+|---|---|---|---|---|
+| T01 | [Register and confirm eligibility](docs/tickets/T01-register.md) | none | manual | todo, **before 20 Oct 12:00 PT** |
+| T02 | [Foundry describer](docs/tickets/T02-foundry-describer.md) | none | S11, S12 | todo |
+| T03 | [Agent Framework workflow](docs/tickets/T03-agent-framework-workflow.md) | T02 | S13 | todo |
+| T04 | [Azure AI Speech with a real key](docs/tickets/T04-azure-speech.md) | Azure resource | S14 | todo |
+| T05 | [Cue sheet and JSON Schema](docs/tickets/T05-cue-sheet.md) | none | S15 | todo |
+| T06 | [Deploy to Azure Container Apps](docs/tickets/T06-deploy.md) | T04 | S16 | todo |
+| T07 | [Demo video and pitch](docs/tickets/T07-video-and-pitch.md) | T02 to T06 as shown | checklist | todo |
+| T08 | [MCP server (optional)](docs/tickets/T08-mcp-server.md) | T03 | S17 | todo |
+| T09 | [Player focus (optional)](docs/tickets/T09-player-focus.md) | none | S18 | todo |
+| T10 | [Make the repository public and submit](docs/tickets/T10-publish-and-submit.md) | all shown | checklist | todo |
+
+Status values: `todo`, `in progress`, `done`. Change the row in the same commit that finishes the ticket.
 
 ## Suggested schedule
 
 | Day | Work |
 |---|---|
-| 19 Oct (today) | Repo, docs, backend and UI done. **Register.** |
-| 20 to 21 Oct | R2 and R3: Foundry describer, then the Agent Framework workflow |
-| 22 Oct | R4 and R5: real voice, cue sheet |
-| 23 Oct | R6: deploy and cost guards |
-| 24 to 25 Oct | R7 and R8: video, pitch, screenshots; R9 if there is time |
+| 19 Oct (today) | Repo, docs, backend and page done. **T01: register.** |
+| 20 to 21 Oct | T02, then T03 |
+| 22 Oct | T04 and T05 |
+| 23 Oct | T06 |
+| 24 to 25 Oct | T07; T08 and T09 only if there is time |
 | 26 Oct | Buffer, full test run, rehearse the demo |
-| 27 Oct | Submit in the morning (Italy), before the deadline |
+| 27 Oct | T10: submit in the morning (Italy), a day early |
 
 ## Known limits
 
 - No blind or low-vision listener has tested it; the style follows public guidance (`docs/research/accessibility.md`).
-- Planted-error figures in `docs/evaluation.md` test the verifier on the error types it was built for. They show the checks work; they are not a measure of a real model's accuracy.
+- Planted-error figures in `docs/evaluation.md` test the verifier on the error types it was built for. They show the checks work; they are not a measure of a real model's accuracy (T02 adds that).
 - The pitch positions are generated, not measured.

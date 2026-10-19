@@ -131,6 +131,9 @@ The `Dockerfile` has **not been built or run** yet. Hosting on Azure Container A
 | | |
 |---|---|
 | [`docs/hackathon/OFFICIAL_RULES.md`](docs/hackathon/OFFICIAL_RULES.md) | the Official Rules, verbatim |
+| [`docs/submission/`](docs/submission/) | drafts of the pitch and of the under-two-minute demo video script |
+| [`docs/tickets/`](docs/tickets/) | the work items T01 to T10 left before the deadline |
+| [`docs/DECISIONS.md`](docs/DECISIONS.md) | why the project is built the way it is |
 | [`docs/hackathon/SUMMARY.md`](docs/hackathon/SUMMARY.md) | dates, what to submit, prizes, judging, and how SoundPitch maps to them |
 | [`docs/hackathon/SUBMISSION_CHECKLIST.md`](docs/hackathon/SUBMISSION_CHECKLIST.md) | the list to finish before 27 Oct 2026, 23:59 Pacific |
 | [`docs/research/competitors.md`](docs/research/competitors.md) | the other public entries we looked at |
@@ -139,14 +142,16 @@ The `Dockerfile` has **not been built or run** yet. Hosting on Azure Container A
 ## Repository map
 
 ```
-SPEC.md            behaviour, test ids, acceptance rows S1-S10
-ROADMAP.md         done, to do, schedule
+SPEC.md            behaviour, test ids, acceptance rows S1-S18
+CONTEXT.md         glossary and the map of the data contracts
+ROADMAP.md         done, tickets T01-T10, schedule
 CLAUDE.md          instructions for the coding assistant used on this repo
 backend/app/       match_gen, moments, describer, verifier, timing, render, pipeline, tts, evaluate, main
 backend/tests/     pytest suite
 frontend/          index.html, app.js, styles.css (no build step)
 e2e/               Playwright tests with axe-core
-docs/              hackathon, research, evaluation
+docs/              hackathon rules and summary, research, tickets, decisions, submission drafts, evaluation
+.github/           CI: backend tests, end-to-end tests, Docker build
 ```
 
 ## Licence

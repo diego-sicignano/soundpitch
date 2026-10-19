@@ -8,31 +8,35 @@ This repository is a clean, separate project. Do not copy code, docs or history 
 
 The spec is the authority; code follows it.
 
-- [`SPEC.md`](SPEC.md): behaviour, pinned numbers, UI test ids, acceptance rows `S1` to `S10`.
-- [`ROADMAP.md`](ROADMAP.md): what is done and what is left before the deadline.
+- [`SPEC.md`](SPEC.md): behaviour, pinned numbers, UI test ids, acceptance rows `S1` to `S18`.
+- [`CONTEXT.md`](CONTEXT.md): glossary and the map of the contracts. `backend/app/contracts.py` is the single source of the field-level contracts.
+- [`ROADMAP.md`](ROADMAP.md) and [`docs/tickets/`](docs/tickets/): the work items `T01` to `T10`, each citing the acceptance rows it satisfies.
+- [`docs/DECISIONS.md`](docs/DECISIONS.md): why things are the way they are.
 - [`docs/hackathon/`](docs/hackathon/): the official rules (verbatim), our summary and the submission checklist. When a choice depends on a rule, cite the section.
 
 Rules:
 
-1. A behaviour or contract change edits `SPEC.md` first, then `backend/app/contracts.py`, then code.
-2. Test first: write the failing test for an acceptance row, make it pass, refactor.
-3. **Only code decides what is true and when it is said.** A model may choose words; the verifier checks every name, number and attribution against the events. Never let model output reach a user unverified.
-4. Keep the template describer working offline. It is also the fallback, so it must always pass the verifier.
-5. Accessibility is the product: semantic HTML, labelled controls, keyboard operation, visible focus, `prefers-reduced-motion`, axe-core clean (S9). Do not add a feature that breaks these.
-6. Synthetic data only. No real players, clubs, logos or footage (rules 4.7). Fictional teams: Northgate Red, Harbour Blue.
-7. Never commit secrets. Keys live in `backend/.env` (git-ignored); `backend/.env.example` stays empty.
-8. Mark roadmap items done in the same commit that finishes them.
+1. Pick one ticket. Its acceptance rows are the definition of done. Read its spec sections first.
+2. A behaviour or contract change edits `SPEC.md` first, then `backend/app/contracts.py` (and `CONTEXT.md`), then the tests, then the code.
+3. Test first: write the failing test for an acceptance row, make it pass, refactor.
+4. **Only code decides what is true and when it is said.** A model may choose words; the verifier checks every name, number and attribution against the events. Never let model output reach a user unverified.
+5. Keep the template describer working offline. It is also the fallback, so it must always pass the verifier.
+6. Accessibility is the product: semantic HTML, labelled controls, keyboard operation, visible focus, `prefers-reduced-motion`, axe-core clean (S9). Do not add a feature that breaks these.
+7. Synthetic data only. No real players, clubs, logos or footage (rules 4.7). Fictional teams: Northgate Red, Harbour Blue.
+8. Never commit secrets. Keys live in `backend/.env` (git-ignored); `backend/.env.example` stays empty. Never put personal data in the repository.
+9. Record a choice that someone could undo in `docs/DECISIONS.md`.
+10. Mark the ticket done in `ROADMAP.md` in the same commit that finishes it.
 
 ## Library docs
 
-Look up any library, framework, SDK or API through Context7 before writing against it (FastAPI, Pydantic, Playwright, Microsoft Agent Framework, Microsoft Foundry, Azure AI Speech):
+Look up any library, framework, SDK or API through Context7 before writing against it (FastAPI, Pydantic, Playwright, Microsoft Agent Framework, Microsoft Foundry, Azure AI Speech, MCP):
 
 ```powershell
 npx ctx7@latest library "<official name>" "<what to look up>"
 npx ctx7@latest docs <libraryId> "<one concept>"
 ```
 
-Quota error: report it and suggest `npx ctx7@latest login` or `CONTEXT7_API_KEY`.
+Check what the docs say against the version you actually install. Quota error: report it and suggest `npx ctx7@latest login` or `CONTEXT7_API_KEY`.
 
 ## Verification (PowerShell 5.1)
 
@@ -58,8 +62,10 @@ A task is done when every command above exits 0 and the output is read, not assu
 
 ## Run
 
+Preview servers come from `.claude/launch.json`: `soundpitch` (port 8000, `SOUNDPITCH_LLM=scripted`). By hand:
+
 ```powershell
 cd backend; .\.venv\Scripts\python.exe -m uvicorn app.main:app --port 8000
 ```
 
-Open <http://localhost:8000>. `SOUNDPITCH_LLM` selects the describer: `scripted` (default, offline), `bad_then_good`, `always_bad` (test scenarios), `foundry` (planned).
+Open <http://localhost:8000>. `SOUNDPITCH_LLM` selects the describer: `scripted` (default, offline), `bad_then_good`, `always_bad` (test scenarios), `foundry` (ticket T02).

@@ -95,3 +95,12 @@ You keep ownership, but you grant Microsoft and the Premier League a worldwide, 
 | Multi-agent category | The roles exist (moment detector, describer, verifier, timing planner, renderer) but run as plain Python, not on Agent Framework. |
 | Public repo, public demo until 10 Nov, video under 2 minutes | Not done yet. See [`SUBMISSION_CHECKLIST.md`](SUBMISSION_CHECKLIST.md). |
 | No third-party trademarks in the video | Teams are fictional (Northgate Red, Harbour Blue). Use no Premier League or Microsoft logos in the video without checking permission. |
+
+## Questions only you can settle
+
+- **Original work (4.6, 4.11):** the rules require the submission to be your own original work, solely owned by you. Decide how you will describe the tools you used to build it, including AI coding assistants, and be ready to explain your role in it (8.2 asks winners to verify their "role ... in the creation of the Submission").
+- **Team:** solo, or up to four people. A team needs a Representative who registers and submits.
+- **Commit email:** the commits carry a personal email. On GitHub you can use a `noreply` address instead.
+- **Trademarks:** do not show Premier League or Microsoft logos in the video without permission (4.4).
+- **Voice-over:** use your own voice, or a synthetic voice whose licence allows it. No music.
+
