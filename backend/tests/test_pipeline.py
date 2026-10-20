@@ -169,7 +169,23 @@ def test_the_evaluation_harness_meets_s10():
     assert totals["retry_ok"] == totals["retry_runs"] and totals["fallback_ok"] == totals["fallback_runs"]
 
 
-def test_foundry_mode_says_it_is_not_implemented_yet(monkeypatch):
+def test_foundry_mode_asks_for_its_settings_by_name(monkeypatch):
+    from app import foundry
+
+    for key in ("FOUNDRY_PROJECT_ENDPOINT", "FOUNDRY_MODEL"):
+        monkeypatch.delenv(key, raising=False)
     monkeypatch.setenv("SOUNDPITCH_LLM", "foundry")
-    with pytest.raises(NotImplementedError, match="ROADMAP"):
+    foundry.reset_shared()
+    with pytest.raises(foundry.FoundryNotConfigured, match="FOUNDRY_PROJECT_ENDPOINT"):
         describer_from_env()
+
+
+def test_foundry_mode_hands_back_the_one_shared_describer(monkeypatch, tmp_path):
+    from app import foundry
+    from app.usage import UsageLedger
+
+    ledger = UsageLedger(tmp_path / "u.sqlite", per_minute=1, per_day=1, tokens_per_day=1, eur_per_month=1.0)
+    shared = foundry.FoundryDescriber(client=object(), ledger=ledger)
+    monkeypatch.setenv("SOUNDPITCH_LLM", "foundry")
+    monkeypatch.setattr(foundry, "_SHARED", shared)
+    assert describer_from_env() is shared and describer_from_env() is shared

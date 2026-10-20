@@ -19,4 +19,4 @@ The hackathon site shows you as registered, and "Result" below says when.
 
 ## Result
 
-Not done yet.
+Registered as an individual before the registration period closed on 20 Oct 2026 (the owner confirmed it on 20 Oct). The owner also stated that no project code existed before 29 Sep 2026 (rules 4.3) and that no Microsoft funding was received (4.12). No confirmation number or personal data is kept in this repository.

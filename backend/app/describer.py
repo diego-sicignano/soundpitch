@@ -6,7 +6,7 @@ the retry scenarios and the evaluation harness.
 """
 
 import re
-from typing import Protocol
+from typing import NamedTuple, Protocol
 
 from app.contracts import Description, Event, FactRef, Lang, Match, Moment, Team
 from app.pitch import attacks_right, event_progress
@@ -47,6 +47,8 @@ class Describer(Protocol):
 
 LEX: dict[str, dict] = {
     "en": {
+        "assist": "set up by",
+        "minute": "Minute",
         "dir": {True: "left to right", False: "right to left"},
         "lane_from": {"left": "from the left", "centre": "from the centre", "right": "from the right"},
         "lane_down": {"left": "down the left", "centre": "through the middle", "right": "down the right"},
@@ -61,11 +63,11 @@ LEX: dict[str, dict] = {
             ],
             "goal_assist": [
                 (
-                    "Goal! {p} scores for {team}, set up by {a}. {home} {hs}, {away} {as_}.",
+                    "Goal! {p} scores for {team}, {assist}. {home} {hs}, {away} {as_}.",
                     "Goal! {p} scores for {team}.",
                 ),
                 (
-                    "It's in! {a} lays it on and {p} finishes for {team}. {home} {hs}, {away} {as_}.",
+                    "It's in! {p} finishes for {team}, {assist}. {home} {hs}, {away} {as_}.",
                     "It's in! {p} scores.",
                 ),
             ],
@@ -76,7 +78,7 @@ LEX: dict[str, dict] = {
                 ("{p} has a go {lane_from} and it's on target.", "{p} shoots, on target."),
             ],
             "shot_off_target": [
-                ("{p} shoots {lane_from}, wide of the goal.", "{p} shoots wide."),
+                ("{p} shoots {lane_from}, wide.", "{p} shoots wide."),
                 ("{p} lets fly {lane_from} but it goes wide.", "{p} shoots wide."),
             ],
             "shot_blocked": [("{p} shoots {lane_from}, blocked.", "{p} shoots, blocked.")],
@@ -97,6 +99,8 @@ LEX: dict[str, dict] = {
         },
     },
     "it": {
+        "assist": "assist di",
+        "minute": "Minuto",
         "dir": {True: "da sinistra a destra", False: "da destra a sinistra"},
         "lane_from": {"left": "dalla sinistra", "centre": "dal centro", "right": "dalla destra"},
         "lane_down": {"left": "sulla sinistra", "centre": "per vie centrali", "right": "sulla destra"},
@@ -121,11 +125,11 @@ LEX: dict[str, dict] = {
             ],
             "goal_assist": [
                 (
-                    "Gol! {p} segna per {team}, assist di {a}. {home} {hs}, {away} {as_}.",
+                    "Gol! {p} segna per {team}, {assist}. {home} {hs}, {away} {as_}.",
                     "Gol! {p} segna per {team}.",
                 ),
                 (
-                    "Rete! {a} serve e {p} finalizza per {team}. {home} {hs}, {away} {as_}.",
+                    "Rete! {p} finalizza per {team}, {assist}. {home} {hs}, {away} {as_}.",
                     "Rete! {p} segna.",
                 ),
             ],
@@ -174,7 +178,16 @@ def _chain(events: list[Event], ctx: Context) -> str:
     return ", ".join(sequence)
 
 
-def render(moment: Moment, ctx: Context) -> Description:
+class Facts(NamedTuple):
+    """What the code knows about a moment: its template key, the values a sentence may use and
+    the refs that go with them. The verifier derives its expectations from the same object."""
+
+    key: str
+    fields: dict[str, object]
+    refs: list[FactRef]
+
+
+def facts(moment: Moment, ctx: Context) -> Facts:
     lex = LEX[ctx.lang]
     events = [ctx.by_id[i] for i in moment.event_ids]
     last = events[-1]
@@ -185,6 +198,7 @@ def render(moment: Moment, ctx: Context) -> Description:
         "hs": last.home_score,
         "as_": last.away_score,
     }
+    fields["score"] = f"{fields['home']} {fields['hs']}, {fields['away']} {fields['as_']}"
     refs = [ref(last, "home_score"), ref(last, "away_score")]
     key = moment.kind
     if last.team is not None:
@@ -202,6 +216,7 @@ def render(moment: Moment, ctx: Context) -> Description:
         if len(events) > 1:
             key = "goal_assist"
             fields["a"] = ctx.name(events[0].team, events[0].player)
+            fields["assist"] = f"{lex['assist']} {fields['a']}"
             refs.append(ref(events[0], "player"))
     elif key in ("halftime", "fulltime"):
         pass
@@ -226,7 +241,20 @@ def render(moment: Moment, ctx: Context) -> Description:
             refs.append(ref(last, "target"))
     elif key == "score_update":
         fields["m"] = moment.t // 60
-    options = lex["t"][key]
+        fields["minute"] = f"{lex['minute']} {fields['m']}"
+    # A sentence may state a team, a player or a lane only if the refs carry it; the last event of a
+    # save, a foul or a score reminder has all three, but they are not part of that story.
+    supported = {r.field for r in refs}
+    for field, names in (("team", ("team",)), ("player", ("p",)), ("lane", ("lane_from", "lane_down", "side"))):
+        if field not in supported:
+            for name in names:
+                fields.pop(name, None)
+    return Facts(key, fields, refs)
+
+
+def render(moment: Moment, ctx: Context) -> Description:
+    key, fields, refs = facts(moment, ctx)
+    options = LEX[ctx.lang]["t"][key]
     full, short = options[moment.id % len(options)]
     return Description(
         moment_id=moment.id, lang=ctx.lang, full=full.format(**fields), short=short.format(**fields), refs=refs

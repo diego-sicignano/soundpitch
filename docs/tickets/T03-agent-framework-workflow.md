@@ -1,23 +1,25 @@
 # T03. Microsoft Agent Framework workflow
 
-**Depends on:** T02  **Acceptance:** S13  **Spec:** §12  **Judging:** criteria 1 and 2, Best Multi-Agent System
+**Status: done (2026-10-20).**  **Depends on:** T02  **Acceptance:** S13  **Spec:** §12  **Decision:** D13  **Judging:** criteria 1 and 2, Best Multi-Agent System
 
 ## Goal
 
-The describe, verify, retry, fallback and timing flow runs as an Agent Framework workflow with distinct executors, shared state and a conditional retry edge, and gives the same results as the plain pipeline.
+The describe, verify, retry, fallback and timing flow runs as an Agent Framework workflow with distinct executors and a conditional retry edge, and gives the same results as the plain pipeline.
 
-## Steps
+## Done
 
-1. **Context7 first:** Microsoft Agent Framework for Python: `WorkflowBuilder`, `AgentExecutor`, `add_edge` with `condition`, running a workflow and reading events. Check against the installed version.
-2. **Test first (S13)** in `backend/tests/test_workflow.py`: for `scripted`, `bad_then_good` and `always_bad` the workflow returns the same cues, statuses and report as `build_session`; the trace names the executors; a describer that raises once is retried. Skip the file with a clear reason when the optional package is missing.
-3. Implement `backend/app/workflow.py` with the executors of §12, reusing `detect_moments`, the `Verifier`, `TemplateDescriber` and `plan`. Do not duplicate their logic.
-4. Select it with `SOUNDPITCH_ORCHESTRATOR=workflow` in `main.py`; `plain` stays the default.
-5. Add the package to `backend/requirements-agents.txt`. Update the diagram and the table in `README.md`.
+- The API of the pinned version (`agent-framework-core` 1.22.0) was read from the installed package and the documentation through Context7, then prototyped; it is recorded in D13, including the finding that edge conditions are evaluated when a message is delivered, which is why the messages are immutable.
+- `backend/app/pipeline.py` was split into `describe_step`, `verify_step`, `fallback_step` and `assemble_session`, which the plain pipeline and the workflow both call. `TraceStep.executor` names the executor of each step.
+- `backend/app/workflow.py`; `SOUNDPITCH_ORCHESTRATOR=workflow` selects it in `main.py`; `plain` stays the default.
+- `backend/tests/test_workflow.py` (S13). With the packages installed (Python 3.13): the workflow equals the plain pipeline for the three scenarios, languages, presets and a recorded-reply store; the trace names the executors in order; a describer that raises once is retried; a template fallback that does not verify stops the workflow; concurrent requests are correct; the API serves it. Without the packages the tests that need them are skipped, and the missing-package message and the unknown-orchestrator message are tested everywhere. CI has a `sdk` job for the skipped tests.
 
 ## Verification
 
-Same commands as T02, plus `pytest` with the agents requirements installed.
+```powershell
+cd backend; .\.venv\Scripts\python.exe -m pip install -r requirements-agents.txt   # Python 3.13
+cd backend; .\.venv\Scripts\python.exe -m pytest -q tests/test_workflow.py
+```
 
 ## Out of scope
 
-Handoff builders, group chat, running agents in separate processes.
+Handoff builders, group chat, running agents in separate processes, a model that chooses tools.

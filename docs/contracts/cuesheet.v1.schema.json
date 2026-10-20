@@ -1,0 +1,254 @@
+{
+  "$defs": {
+    "CueSheetBallSound": {
+      "additionalProperties": false,
+      "properties": {
+        "at_ms": {
+          "minimum": 0,
+          "title": "At Ms",
+          "type": "integer"
+        },
+        "gain": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Gain",
+          "type": "number"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "pan": {
+          "maximum": 1,
+          "minimum": -1,
+          "title": "Pan",
+          "type": "number"
+        },
+        "pitch": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Pitch",
+          "type": "number"
+        },
+        "sound": {
+          "enum": [
+            "tick",
+            "turnover",
+            "shot",
+            "save",
+            "goal",
+            "set_piece",
+            "whistle",
+            "whistle_long"
+          ],
+          "title": "Sound",
+          "type": "string"
+        },
+        "type": {
+          "const": "ball_sound",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "at_ms",
+        "sound",
+        "pan",
+        "pitch",
+        "gain"
+      ],
+      "title": "CueSheetBallSound",
+      "type": "object"
+    },
+    "CueSheetCaption": {
+      "additionalProperties": false,
+      "properties": {
+        "at_ms": {
+          "minimum": 0,
+          "title": "At Ms",
+          "type": "integer"
+        },
+        "duration_ms": {
+          "exclusiveMinimum": 0,
+          "title": "Duration Ms",
+          "type": "integer"
+        },
+        "event_ids": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Event Ids",
+          "type": "array"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "priority": {
+          "maximum": 3,
+          "minimum": 0,
+          "title": "Priority",
+          "type": "integer"
+        },
+        "status": {
+          "enum": [
+            "verified",
+            "fallback"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "type": {
+          "const": "caption",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "at_ms",
+        "duration_ms",
+        "priority",
+        "event_ids",
+        "text",
+        "status",
+        "type"
+      ],
+      "title": "CueSheetCaption",
+      "type": "object"
+    },
+    "CueSheetDescription": {
+      "additionalProperties": false,
+      "properties": {
+        "at_ms": {
+          "minimum": 0,
+          "title": "At Ms",
+          "type": "integer"
+        },
+        "duration_ms": {
+          "exclusiveMinimum": 0,
+          "title": "Duration Ms",
+          "type": "integer"
+        },
+        "event_ids": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Event Ids",
+          "type": "array"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "priority": {
+          "maximum": 3,
+          "minimum": 0,
+          "title": "Priority",
+          "type": "integer"
+        },
+        "status": {
+          "enum": [
+            "verified",
+            "fallback"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "type": {
+          "const": "audio_description",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "at_ms",
+        "duration_ms",
+        "priority",
+        "event_ids",
+        "text",
+        "status",
+        "type"
+      ],
+      "title": "CueSheetDescription",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "The flat, versioned output for graphics and captioning systems (SPEC \u00a713).",
+  "properties": {
+    "duration_ms": {
+      "exclusiveMinimum": 0,
+      "title": "Duration Ms",
+      "type": "integer"
+    },
+    "items": {
+      "items": {
+        "discriminator": {
+          "mapping": {
+            "audio_description": "#/$defs/CueSheetDescription",
+            "ball_sound": "#/$defs/CueSheetBallSound",
+            "caption": "#/$defs/CueSheetCaption"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/$defs/CueSheetDescription"
+          },
+          {
+            "$ref": "#/$defs/CueSheetCaption"
+          },
+          {
+            "$ref": "#/$defs/CueSheetBallSound"
+          }
+        ]
+      },
+      "title": "Items",
+      "type": "array"
+    },
+    "lang": {
+      "enum": [
+        "en",
+        "it"
+      ],
+      "title": "Lang",
+      "type": "string"
+    },
+    "match_clock_from": {
+      "pattern": "^\\d{2,}:\\d{2}$",
+      "title": "Match Clock From",
+      "type": "string"
+    },
+    "preset": {
+      "title": "Preset",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "schema_version",
+    "preset",
+    "lang",
+    "match_clock_from",
+    "duration_ms",
+    "items"
+  ],
+  "title": "CueSheet",
+  "type": "object"
+}

@@ -1,25 +1,25 @@
 # T06. Deploy to Azure Container Apps
 
-**Depends on:** T04 (and T02 if the model runs in Azure)  **Acceptance:** S16  **Spec:** §15  **Rules:** 4.8 (free access for judges until 10 Nov)  **Judging:** criterion 3, Best Azure Cloud Native Integration
+**Status: in progress.** Done: the `Dockerfile` for the judges' image (D12), `python -m app.smoke`, the CI job that builds the image, runs it read-only and smoke-tests it, `docs/DEPLOY.md`. Not done: building the image on a Docker daemon (none was running), creating the Azure resources, running the smoke check against the public URL.
+
+**Depends on:** T11 (so the demo shows recorded model words), T04 optional  **Acceptance:** S16  **Spec:** §15  **Rules:** 4.8 (free access for judges until 10 Nov, 23:59 Pacific)  **Judging:** criterion 3, Best Azure Cloud Native Integration
 
 ## Goal
 
-A public URL that works without a login, stays up until the end of judging, and cannot run up the bill.
+A public URL that works without a login, stays up until the end of judging, makes no model call and cannot run up the bill.
 
 ## Steps
 
-1. **Test first:** `backend/tests/test_smoke.py` for the checks of `scripts/smoke.py` (a function `check(client)` run against the TestClient: health, presets, a valid session for each preset with no overlap and the must-say moments present).
-2. Write `scripts/smoke.py <base-url>` (httpx, exits non-zero on failure).
-3. Start Docker Desktop and build the image: `docker build -t soundpitch .`; run it and run the smoke script against `http://localhost:8000`. Fix the `Dockerfile` if needed.
-4. Write `docs/DEPLOY.md`: the commands (Azure CLI), the resources created, the settings and secrets, and how to delete everything.
-5. Create the Container App: public ingress, min replicas 1, max 2, secrets for keys (or a managed identity), a budget alert on the subscription. Run the smoke script against the public URL; open it in a clean browser.
-6. Add a CI job that builds the image and runs the smoke script (see `.github/workflows/ci.yml`).
-7. Put the URL in `README.md` and `docs/submission/PITCH.md`. Calendar reminder: **do not delete or stop it before 10 Nov 2026.**
+1. *(done)* `backend/tests/test_smoke.py` and `backend/app/smoke.py` (`python -m app.smoke <base-url>`).
+2. Start Docker Desktop, then `docker build -t soundpitch .` and `docker run --rm -p 8000:8000 --read-only --cap-drop ALL soundpitch`; run the smoke check against `http://localhost:8000`. Fix the `Dockerfile` if needed and record the result in `docs/DEPLOY.md`.
+3. **With the owner's approval of the resources and their cost:** create the resource group, the Container Apps environment and the container app (external ingress, port 8000, one replica, `SOUNDPITCH_TRUST_PROXY=1`), from the image. Check the current `az containerapp` documentation first; write the commands that were run into `docs/DEPLOY.md`.
+4. Run the smoke check against the public URL; open it in a clean browser window.
+5. Put the URL in `README.md` and `docs/submission/PITCH.md`. Calendar reminder: **do not delete or stop it before 11 Nov 2026, 08:59 Italian time.**
 
 ## Verification
 
-`scripts/smoke.py` exits 0 on the public URL.
+`python -m app.smoke https://<url>` exits 0; `/api/health` answers `"llm":"replay"`.
 
 ## Out of scope
 
-Custom domain, autoscaling rules beyond the replica limit, a database, Functions or Logic Apps.
+A live model or its ledger in the public path (D12), a custom domain, autoscaling rules beyond the replica limit, a database, Functions or Logic Apps.

@@ -1,22 +1,22 @@
-# T05. Cue sheet and published JSON Schema
+# T05. Cue sheet and JSON Schema
 
-**Depends on:** none  **Acceptance:** S15  **Spec:** §13  **Rules:** 4.1 (e): "clean outputs, timed and machine-readable"
+**Status: done (2026-10-20).**  **Depends on:** none  **Acceptance:** S15  **Spec:** §13  **Decision:** D15  **Judging:** criterion 1 (clean, machine-readable output is welcome in the Render stage)
 
 ## Goal
 
-A versioned, machine-readable cue sheet that a graphics or captioning system could consume, with a published JSON Schema.
+A versioned, schema-checked JSON export of a session that a graphics or captioning system can consume.
 
-## Steps
+## Done
 
-1. Add `CueSheet` and `CueSheetItem` to `backend/app/contracts.py` as specified in §13; list them in `CONTEXT.md`.
-2. **Test first (S15)** in `backend/tests/test_cuesheet.py`: every preset and detail level validates against the committed schema (add `jsonschema` to `requirements-dev.txt`); the committed schema equals the generated one; items sorted by `at_ms`; descriptions never overlap; a caption has the timing of its description.
-3. Implement `backend/app/cuesheet.py` (built from a `Session`, no new logic), the two endpoints in `main.py`, and `python -m app.export_schema` that writes `docs/contracts/cuesheet.v1.schema.json`.
-4. Add the endpoints to the API table in `README.md`.
+- `CueSheet`, three item types and the schema in `backend/app/contracts.py`; the builder and `python -m app.cuesheet --write` in `backend/app/cuesheet.py`; `GET /api/cuesheet` and `GET /api/cuesheet.schema.json` in `main.py`.
+- The schema is committed as `docs/contracts/cuesheet.v1.schema.json`; `backend/tests/test_cuesheet.py` fails if it differs from the generated one, and checks all 30 combinations of preset, detail and language against their session (order, unique ids, no overlap, caption equals description, ball sounds equal earcons).
 
 ## Verification
 
-Same commands as T02.
+```powershell
+cd backend; .\.venv\Scripts\python.exe -m pytest -q tests/test_cuesheet.py
+```
 
 ## Out of scope
 
-Pushing cue sheets over a socket, other export formats (EBU-TT, IMSC).
+A second validator library, a streaming (live) cue feed, other output formats than JSON and WebVTT.

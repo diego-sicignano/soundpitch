@@ -66,9 +66,9 @@ def test_webvtt_endpoint():
 def clean_tts(monkeypatch):
     for name in ("AZURE_SPEECH_KEY", "AZURE_SPEECH_REGION", "SOUNDPITCH_TTS_PER_MINUTE"):
         monkeypatch.delenv(name, raising=False)
-    tts.LIMITER.reset()
+    tts.reset()
     yield
-    tts.LIMITER.reset()
+    tts.reset()
 
 
 def stub_azure(monkeypatch, handler):
@@ -90,6 +90,7 @@ def test_tts_sends_ssml_to_azure_and_returns_the_audio(monkeypatch):
         return httpx.Response(200, content=b"ID3-audio")
 
     stub_azure(monkeypatch, handler)
+    tts.issue("it", ["Goal! Marsh & Reyes"])
     response = client.post("/api/tts", json={"text": "Goal! Marsh & Reyes", "lang": "it", "rate": 1.4})
     assert response.status_code == 200 and response.content == b"ID3-audio"
     assert response.headers["content-type"] == "audio/mpeg"
@@ -100,6 +101,7 @@ def test_tts_sends_ssml_to_azure_and_returns_the_audio(monkeypatch):
 
 
 def test_tts_reports_azure_failures_as_bad_gateway(monkeypatch):
+    tts.issue("en", ["Goal!"])
     stub_azure(monkeypatch, lambda request: httpx.Response(401))
     response = client.post("/api/tts", json={"text": "Goal!"})
     assert response.status_code == 502 and "401" in response.json()["message"]
@@ -116,5 +118,48 @@ def test_tts_validates_input_and_rate_limits(monkeypatch):
     assert client.post("/api/tts", json={"text": "x" * 401}).status_code == 422
     stub_azure(monkeypatch, lambda request: httpx.Response(200, content=b"a"))
     monkeypatch.setenv("SOUNDPITCH_TTS_PER_MINUTE", "2")
-    statuses = [client.post("/api/tts", json={"text": "Goal!"}).status_code for _ in range(3)]
+    tts.issue("en", ["Goal 1!", "Goal 2!", "Goal 3!"])
+    statuses = [client.post("/api/tts", json={"text": f"Goal {n}!"}).status_code for n in (1, 2, 3)]
     assert statuses == [200, 200, 429]
+
+
+# ---- S25: response headers -----------------------------------------------------------------------------
+
+BASE_HEADERS = {
+    "x-content-type-options": "nosniff",
+    "referrer-policy": "no-referrer",
+    "x-frame-options": "DENY",
+}
+
+
+@pytest.mark.parametrize("path", ["/", "/api/health", "/api/session", "/api/session?preset=nope", "/api/nowhere"])
+def test_every_response_carries_the_security_headers(path):
+    response = client.get(path)
+    for name, value in BASE_HEADERS.items():
+        assert response.headers[name] == value, (path, name)
+    policy = response.headers["content-security-policy"]
+    assert "default-src 'self'" in policy and "frame-ancestors 'none'" in policy
+    assert "unsafe-inline" not in policy and "unsafe-eval" not in policy
+
+
+def test_the_documentation_pages_keep_their_own_scripts_but_get_the_basic_headers():
+    for path in ("/docs", "/openapi.json"):
+        response = client.get(path)
+        assert response.status_code == 200
+        assert "content-security-policy" not in response.headers
+        assert response.headers["x-content-type-options"] == "nosniff"
+
+
+def test_an_unhandled_error_is_a_json_500_that_still_carries_the_security_headers(monkeypatch):
+    monkeypatch.setenv("SOUNDPITCH_LLM", "no-such-mode")
+    from app import main
+
+    main._session.cache_clear()
+    try:
+        response = TestClient(app, raise_server_exceptions=False).get("/api/session")
+    finally:
+        main._session.cache_clear()
+    assert response.status_code == 500 and response.json()["code"] == "internal_error"
+    assert response.headers["x-content-type-options"] == "nosniff"
+    assert "default-src 'self'" in response.headers["content-security-policy"]
+    assert "no-such-mode" not in response.text  # the message names no setting and no value
