@@ -16,8 +16,9 @@ Deadlines are in [`SUMMARY.md`](SUMMARY.md). Registration closed **20 Oct 2026, 
 
 ## Hero technologies (judging criterion 1, the tie-breaker)
 
-- [x] **Microsoft Foundry** describer run live once (`docs/evidence/foundry-run.md`).
-- [ ] Replay file recorded from Foundry and committed (T11, needs approval).
+- [x] **Microsoft Foundry** describer run live twice on 2026-10-20 (`docs/evidence/foundry-run.md`).
+- [x] Replay file recorded from Foundry (T11: 26 replies, 30 of 30 windows).
+- [x] Replay file committed; the owner reviewed the Italian sentences the model wrote, one is kept as recorded and documented.
 - [x] **Microsoft Agent Framework** workflow for describer, verifier, fallback, timing (T03).
 - [ ] **Azure AI Speech** voice tested with a real key (T04, needs a pricing-tier decision).
 - [ ] **Azure Container Apps** hosting (T06, needs approval).

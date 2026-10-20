@@ -1,5 +1,7 @@
 # T11. Record the replay file
 
+**Status: done (2026-10-20).** Recorded under the ledger: 26 replies, 30 of 30 requests, about 0.028 USD at list price (provider tokens). A pacing bug in the tool cost one extra invocation and was fixed with tests. Results, and the open point about one Italian sentence, are in `docs/evidence/foundry-run.md`.
+
 **Depends on:** T02b, the prompt and templates frozen, **the owner's approval** (it spends model calls)  **Acceptance:** S24  **Spec:** §11  **Decision:** D12
 
 ## Goal

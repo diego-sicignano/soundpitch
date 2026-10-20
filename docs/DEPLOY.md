@@ -22,7 +22,7 @@ cd backend; .\.venv\Scripts\python.exe -m app.smoke http://localhost:8000; cd ..
 
 ## Recording the replay file (needs approval; spends model calls)
 
-The replay file `backend/app/replay_data/foundry_replies.json` holds the replies a Foundry model gave to every request of the demo (5 windows x 3 detail levels x 2 languages, first attempt). It is empty until this is done, and then the replay mode speaks the verified templates. Expected size: about 30 to 60 calls of the `gpt-4.1-mini` deployment, a few cents at the ledger's rate. Do it once, after the prompt is final: **any change to `SYSTEM`, the templates or the vocabulary changes the keys** and the committed file then has no matching reply (`tests/test_replay.py` fails once the file has content and no longer covers every window, and `python -m app.replay_export --check` says how many requests are covered).
+The replay file `backend/app/replay_data/foundry_replies.json` holds the replies a Foundry model gave to every request of the demo (5 windows x 3 detail levels x 2 languages, first attempt). **Recorded on 2026-10-20: 26 replies, 30 of 30 requests** (`docs/evidence/foundry-run.md`). Before it existed the replay mode spoke the verified templates. The tool needs the optional packages (Python 3.13). Expected size: about 30 to 60 calls of the `gpt-4.1-mini` deployment, a few cents at the ledger's rate. Do it once, after the prompt is final: **any change to `SYSTEM`, the templates or the vocabulary changes the keys** and the committed file then has no matching reply (`tests/test_replay.py` fails once the file has content and no longer covers every window, and `python -m app.replay_export --check` says how many requests are covered).
 
 ```powershell
 cd backend

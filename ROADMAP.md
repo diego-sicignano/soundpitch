@@ -39,7 +39,7 @@ Judging weights five criteria at 20% each and ties go to criterion 1 (technology
 | T04 | [Azure AI Speech with a real key](docs/tickets/T04-azure-speech.md) | Azure resource, **owner's approval** | S14 | todo: choose the pricing tier first (it is the only hard cap) |
 | T05 | [Cue sheet and JSON Schema](docs/tickets/T05-cue-sheet.md) | none | S15 | **done** (uncommitted) |
 | T06 | [Deploy to Azure Container Apps](docs/tickets/T06-deploy.md) | T11, T04 optional, **owner's approval** | S16 | in progress: image, smoke check and CI done; deployment not done, image not yet built on a Docker daemon |
-| T11 | [Record the replay file](docs/tickets/T11-record-replay.md) | T02b, prompt frozen, **owner's approval** (model calls) | S24 | todo: until then the replay mode speaks the verified templates |
+| T11 | [Record the replay file](docs/tickets/T11-record-replay.md) | T02b, prompt frozen, **owner's approval** (model calls) | S24 | **done**: recorded 2026-10-20, 26 replies, 30 of 30 windows, about 0.03 USD; the owner reviewed the Italian wording, one sentence is kept as recorded and documented |
 | T07 | [Demo video and pitch](docs/tickets/T07-video-and-pitch.md) | T11, T06 | checklist | todo |
 | T08 | [MCP server (optional)](docs/tickets/T08-mcp-server.md) | T03 | S17 | todo, optional |
 | T09 | [Player focus (optional)](docs/tickets/T09-player-focus.md) | none | S18 | todo, optional |
@@ -64,7 +64,7 @@ Status values: `todo`, `in progress`, `done`. Change the row in the same commit 
 - No blind or low-vision listener has tested it; the style follows public guidance (`docs/research/accessibility.md`).
 - Planted-error figures in `docs/evaluation.md` test the verifier on the error types it was built for. They show the checks work; they are not a measure of a real model's accuracy. The hand-written corpora are small.
 - The verifier proves where facts and words come from (grounding, SPEC §5). It does not prove that prose built from allowed words means what it should, and its closed vocabulary rejects most natural wording: the template fallback speaks instead.
-- The live model mostly copies the template sentences (1.2% own wording in English, 16.0% in Italian); that run predates the cost ledger and was not repeated.
+- The live model mostly copies the template sentences (own wording: 0% in English and 13.6% in Italian in the recorded run, 1.2% and 16.0% in an earlier one). One recorded Italian sentence is not good Italian and passes the verifier, which does not check meaning.
 - Model spending is limited by the application's ledger (one SQLite file per host), not by Azure: the 5 EUR budget only alerts. The judges' path makes no model call (D12).
 - Speech spending has no hard cap until a pricing tier is chosen; the application's limits restart with the process (D14).
 - The pitch positions are generated, not measured.

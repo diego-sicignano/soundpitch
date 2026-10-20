@@ -4,7 +4,7 @@
 
 Built for the [Microsoft x Premier League "Inside the Game" hackathon](docs/hackathon/SUMMARY.md). All data is synthetic: the teams (Northgate Red, Harbour Blue) and the players are invented. This project is not affiliated with, endorsed by or sponsored by Microsoft or the Premier League.
 
-> **Status (20 Oct 2026).** Done and tested: the offline pipeline, the player page, the grounded verifier, the Foundry describer, the usage ledger, the replay mode, the guarded voice endpoint, the cue-sheet JSON export and the Agent Framework workflow. **Not done:** no public deployment yet (so no demo URL), no recorded Foundry replies are committed yet (the replay mode then speaks the verified templates), Azure AI Speech has not been run with a real key, no blind or low-vision listener has tested it. Plan and deadline: [`ROADMAP.md`](ROADMAP.md).
+> **Status (20 Oct 2026).** Done and tested: the offline pipeline, the player page, the grounded verifier, the Foundry describer, the usage ledger, the replay mode with 26 recorded Foundry replies that cover all 30 demo windows, the guarded voice endpoint, the cue-sheet JSON export and the Agent Framework workflow. **Not done:** no public deployment yet (so no demo URL), Azure AI Speech has not been run with a real key, no blind or low-vision listener has tested it. Plan and deadline: [`ROADMAP.md`](ROADMAP.md).
 
 ## For judges
 
@@ -57,7 +57,7 @@ Only code decides **what is true** and **when it is said**; a model only chooses
 
 | Technology | Where | State |
 |---|---|---|
-| Microsoft Foundry (`gpt-4.1-mini`, Global Standard) | `foundry.py` writes the words; evidence in [`docs/evidence/foundry-run.md`](docs/evidence/foundry-run.md) | run live once (26 calls, 20 Oct 2026); it mostly repeats the template wording |
+| Microsoft Foundry (`gpt-4.1-mini`, Global Standard) | `foundry.py` writes the words; evidence in [`docs/evidence/foundry-run.md`](docs/evidence/foundry-run.md) | run live twice on 20 Oct 2026; the second run is recorded in the replay file (26 replies, about 0.03 USD); it mostly repeats the template wording |
 | Microsoft Agent Framework | `FoundryChatClient` in `foundry.py`; the workflow graph in `workflow.py` (optional packages) | built and tested; it orchestrates, the model is not an autonomous agent |
 | Azure AI Speech | `tts.py` | written, tested against a stub, **not run with a real key** |
 | Azure Container Apps | `Dockerfile`, [`docs/DEPLOY.md`](docs/DEPLOY.md) | image not built on a Docker daemon here; **not deployed** |
@@ -130,7 +130,7 @@ The image runs `SOUNDPITCH_LLM=replay` as a non-root user and needs no writable 
 - No blind or low-vision listener has tested it. The style follows public guidance (RNIB, Sky Sports' radio-style description) and is unvalidated.
 - The match is generated, so pitch positions are plausible, not measured.
 - The verifier checks where facts and words come from, not the meaning of a sentence (see above).
-- The Foundry model copies the template sentences in most cues (own wording in 1.2% of English and 16.0% of Italian cues, `docs/evidence/foundry-run.md`), so today it adds little wording of its own. That run predates the cost ledger and was not repeated; the figures are one run of one deployment.
+- The Foundry model copies the template sentences in most cues (own wording in 0% of English and 13.6% of Italian cues in the recorded run, 1.2% and 16.0% in an earlier one, `docs/evidence/foundry-run.md`), so today it adds little wording of its own. One of its Italian sentences is not good Italian and the verifier accepted it, because it does not check meaning; it is kept as recorded and documented, and the owner reviewed the other eight Italian sentences the model wrote. The figures are two runs of one deployment.
 - Model spending is limited by the application, not by Azure: the 5 EUR budget only sends e-mail, 8 to 24 hours late, and pay-as-you-go has no cutoff. The ledger counts estimates, per host (D11). The judges' path makes no model call.
 - Speech spending is limited only by the pricing tier of the Speech resource; the application's limits live in memory and restart at zero (SPEC §8).
 - The browser voice varies by browser and operating system.

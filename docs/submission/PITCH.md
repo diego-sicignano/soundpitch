@@ -20,7 +20,7 @@ Every row must be true on the day of submission and point to real code.
 
 | Technology | Used for | Where in the repository | Status |
 |---|---|---|---|
-| Microsoft Foundry | The describer model; the demo replays its recorded replies | `backend/app/foundry.py`, `replay.py` | run live once (`docs/evidence/foundry-run.md`); state plainly that it writes within a verified vocabulary and often repeats the template wording; [confirm] the replay file is recorded (T11) before saying the demo shows model words |
+| Microsoft Foundry | The describer model; the demo replays its recorded replies | `backend/app/foundry.py`, `replay.py` | run live twice on 2026-10-20 (`docs/evidence/foundry-run.md`); state plainly that it writes within a verified vocabulary and often repeats the template wording; the replay file is recorded (T11, 26 replies, 30 of 30 windows), so the demo can show model words; say that they are verified again on every request |
 | Microsoft Agent Framework | `FoundryChatClient`; a workflow with a retry edge and a fallback | `backend/app/foundry.py`, `workflow.py` | built and tested (T03); say it orchestrates one model and deterministic code, not autonomous agents |
 | Azure AI Speech | Neural voices | `backend/app/tts.py` | [confirm] after T04 |
 | Azure Container Apps | Public demo | `Dockerfile`, `docs/DEPLOY.md` | [confirm] after T06 |
