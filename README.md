@@ -60,7 +60,7 @@ Only code decides **what is true** and **when it is said**; a model only chooses
 | Microsoft Foundry (`gpt-4.1-mini`, Global Standard) | `foundry.py` writes the words; evidence in [`docs/evidence/foundry-run.md`](docs/evidence/foundry-run.md) | run live twice on 20 Oct 2026; the second run is recorded in the replay file (26 replies, about 0.03 USD); it mostly repeats the template wording |
 | Microsoft Agent Framework | `FoundryChatClient` in `foundry.py`; the workflow graph in `workflow.py` (optional packages) | built and tested; it orchestrates, the model is not an autonomous agent |
 | Azure AI Speech | `tts.py` | written, tested against a stub, **not run with a real key** |
-| Azure Container Apps | `Dockerfile`, [`docs/DEPLOY.md`](docs/DEPLOY.md) | image not built on a Docker daemon here; **not deployed** |
+| Azure Container Apps | `Dockerfile`, [`docs/DEPLOY.md`](docs/DEPLOY.md) | image built and run read-only here; **not deployed** (plan, cost check and rollback in `docs/DEPLOY.md`) |
 
 ## Run it
 
@@ -88,7 +88,7 @@ Get-Content .env | ForEach-Object { if ($_ -match '^\s*([^#=\s][^=]*?)\s*=\s*(.*
 | `FOUNDRY_PROJECT_ENDPOINT`, `FOUNDRY_MODEL` | The Foundry project and the deployment for `SOUNDPITCH_LLM=foundry`. `az login`; no key is used |
 | `SOUNDPITCH_LLM_CALLS_PER_MINUTE`, `..._PER_DAY`, `SOUNDPITCH_LLM_TOKENS_PER_DAY`, `SOUNDPITCH_LLM_EUR_PER_MONTH`, `SOUNDPITCH_USAGE_DB` | Cost limits of the live model, kept in one SQLite file: default 2 a minute, 20 a day, 120,000 tokens a day, 2.00 EUR a month of estimated spend (never above 4.00). Over a limit, or if the file cannot be used, the call is not made and the template speaks (D11) |
 | `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION` | Enable `POST /api/tts` and the "Azure neural voice" output; without them the page uses the browser voice |
-| `SOUNDPITCH_TTS_PER_CLIENT_PER_MINUTE`, `SOUNDPITCH_TTS_PER_MINUTE`, `SOUNDPITCH_TTS_CHARS_PER_DAY`, `SOUNDPITCH_TTS_CHARS_PER_MONTH`, `SOUNDPITCH_TRUST_PROXY` | Brakes on the voice endpoint (defaults 30, 120, 60,000, 300,000); `SOUNDPITCH_TRUST_PROXY=1` only behind exactly one trusted proxy (SPEC §8) |
+| `SOUNDPITCH_TTS_PER_CLIENT_PER_MINUTE`, `SOUNDPITCH_TTS_PER_MINUTE`, `SOUNDPITCH_TTS_CHARS_PER_DAY`, `SOUNDPITCH_TTS_CHARS_PER_MONTH`, `SOUNDPITCH_TRUST_PROXY` | Brakes on the voice endpoint (defaults 30, 120, 60,000, 300,000); `SOUNDPITCH_TRUST_PROXY=1` only behind exactly one trusted proxy (SPEC §8); `SOUNDPITCH_LOG_FORWARDED=1` logs the shape of `X-Forwarded-For`, never an address |
 
 ## API
 
@@ -98,7 +98,7 @@ Get-Content .env | ForEach-Object { if ($_ -match '^\s*([^#=\s][^=]*?)\s*=\s*(.*
 | `GET` | `/api/session?preset=goal_1&detail=standard&lang=en&earcons=true&calm=false&rate=1` | cues with millisecond timings, earcons, ball track, trace, report |
 | `GET` | `/api/session.vtt?...` | the same cues as WebVTT captions |
 | `GET` | `/api/cuesheet?...`, `/api/cuesheet.schema.json` | the session as a versioned cue sheet, and its JSON Schema |
-| `POST` | `/api/tts` | `audio/mpeg` from Azure AI Speech, only for text a session returned (`403` otherwise) |
+| `POST` | `/api/tts` | `audio/mpeg`, a stored clip or Azure AI Speech, only for text a session returned (`403` otherwise); `X-Audio-Rate` says the speed the audio already has |
 | `GET` | `/api/health` | status and describer mode |
 
 Errors are `{code, message}`; the full contract is `SPEC.md` §8 and `backend/app/contracts.py`.
@@ -123,7 +123,7 @@ docker build -t soundpitch .
 docker run -p 8000:8000 soundpitch
 ```
 
-The image runs `SOUNDPITCH_LLM=replay` as a non-root user and needs no writable path, key or network. It has **not been built on a Docker daemon here** (none was running); the `docker` job in `.github/workflows/ci.yml` builds it, runs it read-only and smoke-tests it. Deployment: [`docs/DEPLOY.md`](docs/DEPLOY.md).
+The image runs `SOUNDPITCH_LLM=replay` as a non-root user and needs no writable path, key or network. It was built and run on Docker here with `--read-only --cap-drop ALL`, with and without network, and passed the smoke check; the `docker` job in `.github/workflows/ci.yml` repeats that on every push. The voice of the public demo is meant to come from stored clips (`backend/app/audio/`, made once with `python -m app.clips_build`; **none exist yet**, so the image speaks with the browser voice until they are made). Deployment: [`docs/DEPLOY.md`](docs/DEPLOY.md).
 
 ## Honest limits
 
