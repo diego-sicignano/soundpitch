@@ -27,17 +27,19 @@ Judging weights five criteria at 20% each and ties go to criterion 1 (technology
 | S23 | The commentary is marked with its own `lang` |
 | S24 | Replay of recorded Foundry replies, re-verified on every session (D12) |
 | S25 | Security headers and a content security policy (D16) |
+| S26, S27, S28 | Stored voice clips and their generation tool (dry run only: **no clip exists yet**), defensive `X-Forwarded-For`, `playbackRate` and the synthetic-voice note (D17) |
+| S29, S30 | The page offers the Azure voice only where the server has clips or a key, and says so when the browser has no voice for the language |
 
 ## Tickets
 
 | ID | Ticket | Depends on | Acceptance | Status |
 |---|---|---|---|---|
 | T01 | [Register and confirm eligibility](docs/tickets/T01-register.md) | none | manual | **done** (registered, individual) |
-| T02a | [Grounded verifier](docs/tickets/T02a-grounded-verifier.md) | none | S3, S19, S20 | **done** (uncommitted) |
-| T02b | [Foundry describer](docs/tickets/T02-foundry-describer.md) | T02a | S11, S12 | **done** (uncommitted): S11 offline, S12 live once on 2026-10-20; the model mostly copies the templates (D10) |
-| T03 | [Agent Framework workflow](docs/tickets/T03-agent-framework-workflow.md) | T02b | S13 | **done** (uncommitted); S13 verified on Python 3.13 with the pinned packages |
-| T04 | [Azure AI Speech with a real key](docs/tickets/T04-azure-speech.md) | Azure resource, **owner's approval** | S14 | todo: choose the pricing tier first (it is the only hard cap) |
-| T05 | [Cue sheet and JSON Schema](docs/tickets/T05-cue-sheet.md) | none | S15 | **done** (uncommitted) |
+| T02a | [Grounded verifier](docs/tickets/T02a-grounded-verifier.md) | none | S3, S19, S20 | **done** |
+| T02b | [Foundry describer](docs/tickets/T02-foundry-describer.md) | T02a | S11, S12 | **done**: S11 offline, S12 live once on 2026-10-20; the model mostly copies the templates (D10) |
+| T03 | [Agent Framework workflow](docs/tickets/T03-agent-framework-workflow.md) | T02b | S13 | **done**; S13 verified on Python 3.13 with the pinned packages |
+| T04 | [Azure AI Speech with a real key](docs/tickets/T04-azure-speech.md) | Azure resource, **owner's approval** | S14 | todo: the client and the clip tool exist and are tested against a stub; no Speech request has ever been sent and no clip exists (`docs/DEPLOY.md`, G3) |
+| T05 | [Cue sheet and JSON Schema](docs/tickets/T05-cue-sheet.md) | none | S15 | **done** |
 | T06 | [Deploy to Azure Container Apps](docs/tickets/T06-deploy.md) | T11, T04 optional, **owner's approval** | S16 | offline preparation done (image built and run read-only, publish job, stored clips, defensive `X-Forwarded-For`); nothing deployed, no clip generated: each external step waits for approval (`docs/DEPLOY.md`) |
 | T11 | [Record the replay file](docs/tickets/T11-record-replay.md) | T02b, prompt frozen, **owner's approval** (model calls) | S24 | **done**: recorded 2026-10-20, 26 replies, 30 of 30 windows, about 0.03 USD; the owner reviewed the Italian wording, one sentence is kept as recorded and documented |
 | T07 | [Demo video and pitch](docs/tickets/T07-video-and-pitch.md) | T11, T06 | checklist | todo |
@@ -45,7 +47,7 @@ Judging weights five criteria at 20% each and ties go to criterion 1 (technology
 | T09 | [Player focus (optional)](docs/tickets/T09-player-focus.md) | none | S18 | todo, optional |
 | T10 | [Make the repository public and submit](docs/tickets/T10-publish-and-submit.md) | all shown | checklist | todo |
 
-Status values: `todo`, `in progress`, `done`. Change the row in the same commit that finishes the ticket. The work marked "uncommitted" is committed together once reviewed.
+Status values: `todo`, `in progress`, `done`. Change the row in the same commit that finishes the ticket.
 
 ## Suggested schedule
 

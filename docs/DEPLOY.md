@@ -63,7 +63,7 @@ cd backend
 cd ..
 ```
 
-Then run the tests, listen to a clip of each language, commit `backend/app/audio/` (about 3 MB) and rebuild the image. The page says the voice is synthetic (S28); keep that note.
+Then run the tests, listen to a clip of each language, commit `backend/app/audio/` (about 3 MB) and rebuild the image. The page says the voice is synthetic (S28); keep that note. Until the clips exist, the page does not offer the Azure voice at all (S29) and the default browser voice is used, which depends on the voices installed in the judge's browser and system (the page says when there is none for the language, S30): the video and the README must not claim an Azure voice before this step.
 
 ## Publishing the image (G2: needs the repository to exist; *not run*)
 
@@ -118,7 +118,7 @@ Things that may need a different command, to be settled in the documentation or 
 cd backend; .\.venv\Scripts\python.exe -m app.smoke https://<fqdn>; cd ..
 ```
 
-It must exit 0. Also check by hand: `/api/health` shows `"llm":"replay"` and `replies` 26; both languages; transcript, captions, ball sound, calm mode and screen-reader output; `/api/cuesheet` and its schema; the security headers; `POST /api/tts` for text that was not issued answers `403`; a clean browser window with no login; and that it works with no Foundry credential. Then set `SOUNDPITCH_LOG_FORWARDED` back off if the shape was seen.
+It must exit 0. Also check by hand: `/api/health` shows `"llm":"replay"` and `replies` 26; `/api/voice` shows the stored clips per language (zeros and `live: false` until the clips are made and shipped, and then the page disables the Azure voice option and speaks with the browser voice); both languages; transcript, captions, ball sound, calm mode and screen-reader output; `/api/cuesheet` and its schema; the security headers; `POST /api/tts` for text that was not issued answers `403`; a clean browser window with no login; and that it works with no Foundry credential. Then set `SOUNDPITCH_LOG_FORWARDED` back off if the shape was seen.
 
 ### Cost check (G6; read-only commands, *not run*)
 

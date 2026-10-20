@@ -4,7 +4,7 @@
 
 Built for the [Microsoft x Premier League "Inside the Game" hackathon](docs/hackathon/SUMMARY.md). All data is synthetic: the teams (Northgate Red, Harbour Blue) and the players are invented. This project is not affiliated with, endorsed by or sponsored by Microsoft or the Premier League.
 
-> **Status (20 Oct 2026).** Done and tested: the offline pipeline, the player page, the grounded verifier, the Foundry describer, the usage ledger, the replay mode with 26 recorded Foundry replies that cover all 30 demo windows, the guarded voice endpoint, the cue-sheet JSON export and the Agent Framework workflow. **Not done:** no public deployment yet (so no demo URL), Azure AI Speech has not been run with a real key, no blind or low-vision listener has tested it. Plan and deadline: [`ROADMAP.md`](ROADMAP.md).
+> **Status (20 Oct 2026).** Done and tested: the offline pipeline, the player page, the grounded verifier, the Foundry describer, the usage ledger, the replay mode with 26 recorded Foundry replies that cover all 30 demo windows, the guarded voice endpoint, the cue-sheet JSON export and the Agent Framework workflow. **Not done:** no public deployment yet (so no demo URL), Azure AI Speech has never been called (no voice clip exists, so the demo speaks with the browser's own voice), no blind or low-vision listener has tested it. Plan and deadline: [`ROADMAP.md`](ROADMAP.md).
 
 ## For judges
 
@@ -24,7 +24,7 @@ The public demo will run `SOUNDPITCH_LLM=replay`: words that a Foundry model wro
 - **Ball sound**: one short sound per event. Stereo position follows the ball across the pitch, pitch rises towards the opponent's goal. Different sounds for a pass, a shot, a save, a goal, a whistle.
 - **Captions** in large type, and a transcript that fills as the match plays. The commentary is marked with its own `lang`, so a screen reader switches voice for Italian.
 - **Calm mode**: only goals and whistles make a sound, and the voice slows down.
-- **Three outputs**: the browser's voice, an Azure neural voice, or plain text into an `aria-live` region for people who use their own screen reader.
+- **Three outputs**: the browser's own voice (the default, which depends on the voices your browser and system have installed; the page says when there is none for the language), an Azure neural voice (offered only where the server has the stored clips or a Speech key; none exist in this repository yet), or plain text into an `aria-live` region for people who use their own screen reader.
 - **A visible plan**: the page draws the pitch and a timeline of when the voice speaks and when it is silent, and a report of what was checked.
 - **A machine-readable cue sheet** (`/api/cuesheet`) with versioned JSON Schema, and WebVTT captions.
 
@@ -87,7 +87,7 @@ Get-Content .env | ForEach-Object { if ($_ -match '^\s*([^#=\s][^=]*?)\s*=\s*(.*
 | `SOUNDPITCH_ORCHESTRATOR` | `plain` (default) or `workflow` (Agent Framework graph; needs `requirements-agents.txt`) |
 | `FOUNDRY_PROJECT_ENDPOINT`, `FOUNDRY_MODEL` | The Foundry project and the deployment for `SOUNDPITCH_LLM=foundry`. `az login`; no key is used |
 | `SOUNDPITCH_LLM_CALLS_PER_MINUTE`, `..._PER_DAY`, `SOUNDPITCH_LLM_TOKENS_PER_DAY`, `SOUNDPITCH_LLM_EUR_PER_MONTH`, `SOUNDPITCH_USAGE_DB` | Cost limits of the live model, kept in one SQLite file: default 2 a minute, 20 a day, 120,000 tokens a day, 2.00 EUR a month of estimated spend (never above 4.00). Over a limit, or if the file cannot be used, the call is not made and the template speaks (D11) |
-| `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION` | Enable `POST /api/tts` and the "Azure neural voice" output; without them the page uses the browser voice |
+| `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION` | Enable the live path of `POST /api/tts`; the "Azure neural voice" output is offered when these are set or when stored clips exist for the language (`GET /api/voice`); otherwise the page uses the browser voice |
 | `SOUNDPITCH_TTS_PER_CLIENT_PER_MINUTE`, `SOUNDPITCH_TTS_PER_MINUTE`, `SOUNDPITCH_TTS_CHARS_PER_DAY`, `SOUNDPITCH_TTS_CHARS_PER_MONTH`, `SOUNDPITCH_TRUST_PROXY` | Brakes on the voice endpoint (defaults 30, 120, 60,000, 300,000); `SOUNDPITCH_TRUST_PROXY=1` only behind exactly one trusted proxy (SPEC §8); `SOUNDPITCH_LOG_FORWARDED=1` logs the shape of `X-Forwarded-For`, never an address |
 
 ## API
@@ -98,6 +98,7 @@ Get-Content .env | ForEach-Object { if ($_ -match '^\s*([^#=\s][^=]*?)\s*=\s*(.*
 | `GET` | `/api/session?preset=goal_1&detail=standard&lang=en&earcons=true&calm=false&rate=1` | cues with millisecond timings, earcons, ball track, trace, report |
 | `GET` | `/api/session.vtt?...` | the same cues as WebVTT captions |
 | `GET` | `/api/cuesheet?...`, `/api/cuesheet.schema.json` | the session as a versioned cue sheet, and its JSON Schema |
+| `GET` | `/api/voice` | What the Azure voice can do on this server: stored clips per language, and whether Speech is configured |
 | `POST` | `/api/tts` | `audio/mpeg`, a stored clip or Azure AI Speech, only for text a session returned (`403` otherwise); `X-Audio-Rate` says the speed the audio already has |
 | `GET` | `/api/health` | status and describer mode |
 
@@ -142,7 +143,7 @@ This repository was written with the help of an AI coding assistant (Claude Code
 ## Repository map
 
 ```
-SPEC.md            behaviour, test ids, acceptance rows S1-S25
+SPEC.md            behaviour, test ids, acceptance rows S1-S30
 CONTEXT.md         glossary and the map of the data contracts
 ROADMAP.md         done, tickets, schedule
 CLAUDE.md          instructions for the coding assistant used on this repo
