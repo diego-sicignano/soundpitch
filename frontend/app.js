@@ -13,6 +13,9 @@ let audioContext = null;
 let currentAudio = null;
 let audioByCue = new Map();
 let loadToken = 0;
+let voiceSupport = null; // GET /api/voice: what the Azure voice can do on this server (S29)
+const VOICE_NOTE = $("voice-note").textContent;
+const LANGUAGE_NAME = { en: "English", it: "Italian" };
 
 const clockText = (seconds) => `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`;
 const say = (text) => ($("status").textContent = text);
@@ -36,9 +39,15 @@ async function getJson(url, options) {
 
 async function init() {
   try {
-    const [match, presets] = await Promise.all([getJson("/api/match"), getJson("/api/presets")]);
+    const [match, presets, voice] = await Promise.all([
+      getJson("/api/match"),
+      getJson("/api/presets"),
+      getJson("/api/voice").catch(() => null), // unknown: the Azure option stays, and a 501 falls back as before
+    ]);
     state.match = match;
     state.presets = presets;
+    voiceSupport = voice;
+    if (window.speechSynthesis) window.speechSynthesis.getVoices(); // some browsers load their voices only after this call
     $("preset").replaceChildren(...presets.map((p) => new Option(p.title, p.id)));
     $("preset").value = query.get("preset") || "goal_1";
     await loadSession();
@@ -53,9 +62,24 @@ function markLanguage(lang) {
   for (const id of ["transcript", "captions", "live-region"]) $(id).setAttribute("lang", lang);
 }
 
+// The Azure voice is offered only where the server can speak it: a stored clip for this language or a live key.
+// Returns a sentence when the choice had to go back to the browser voice.
+function offerVoices() {
+  const lang = $("lang").value;
+  const available = !voiceSupport || voiceSupport.live || voiceSupport.stored_clips[lang] > 0;
+  $("output").querySelector('option[value="azure"]').disabled = !available;
+  $("voice-note").textContent = available
+    ? VOICE_NOTE
+    : "The Azure neural voice is not available on this server for this language. Use the browser voice or your own screen reader.";
+  if (available || $("output").value !== "azure") return "";
+  $("output").value = "browser";
+  return `The Azure voice is not available in ${LANGUAGE_NAME[lang]}, so the browser voice is used.`;
+}
+
 async function loadSession() {
   const token = ++loadToken;
   stop();
+  const voiceChanged = offerVoices();
   say("Preparing the commentary");
   let session;
   try {
@@ -78,7 +102,7 @@ async function loadSession() {
   renderReport();
   draw();
   $("play").textContent = "Play";
-  say(`Ready: ${session.title}. ${session.cues.length} descriptions.`);
+  say(`Ready: ${session.title}. ${session.cues.length} descriptions. ${voiceChanged}`.trim());
   if ($("output").value === "azure" && !SPEECH_OFF) prefetchAzure(session, token);
 }
 
@@ -163,6 +187,17 @@ function announce(text) {
   const region = $("live-region");
   region.textContent = "";
   requestAnimationFrame(() => (region.textContent = text));
+}
+
+// Says honestly when the browser voice cannot speak (S30): the captions, the transcript and the screen-reader output remain.
+function browserVoiceProblem() {
+  const advice = "Read the captions and the transcript, or choose “My own screen reader (text only)” under Voice.";
+  if (!window.speechSynthesis) return `This browser cannot speak aloud. ${advice}`;
+  const lang = state.session.lang;
+  if (!window.speechSynthesis.getVoices().some((voice) => voice.lang.toLowerCase().startsWith(lang))) {
+    return `This browser reports no ${LANGUAGE_NAME[lang]} voice, so nothing may be spoken aloud. ${advice}`;
+  }
+  return "";
 }
 
 function browserSpeak(text) {
@@ -308,7 +343,8 @@ function play() {
   state.playing = true;
   state.last = performance.now();
   $("play").textContent = "Pause";
-  say("Playing");
+  const problem = $("output").value === "browser" && !SPEECH_OFF ? browserVoiceProblem() : "";
+  say(problem ? `Playing. ${problem}` : "Playing");
   requestAnimationFrame(tick);
 }
 

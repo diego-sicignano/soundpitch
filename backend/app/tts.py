@@ -180,6 +180,11 @@ class Audio:
     rate: float  # the speech rate already in the audio: 1 for a stored clip, the requested rate when synthesised
 
 
+def live_configured() -> bool:
+    """True when a Speech key and region are set; reads no value out (S29)."""
+    return bool(os.environ.get("AZURE_SPEECH_KEY") and os.environ.get("AZURE_SPEECH_REGION"))
+
+
 def synthesize(text: str, lang: Lang, rate: float, client: str = "local") -> Audio:
     percent = round((rate - 1) * 100)
     with _lock:

@@ -12,7 +12,7 @@ from fastapi import FastAPI, Query, Request
 from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from app import cuesheet, tts
+from app import clips, cuesheet, tts
 from app.contracts import (
     CueSheet,
     Detail,
@@ -23,6 +23,7 @@ from app.contracts import (
     Profile,
     Session,
     TtsRequest,
+    VoiceSupport,
 )
 from app.foundry import BUDGET_NOTE, FoundryNotConfigured
 from app.match_gen import SEED, generate_match
@@ -252,6 +253,13 @@ def get_cuesheet(
 @app.get("/api/cuesheet.schema.json")
 def get_cuesheet_schema() -> JSONResponse:
     return JSONResponse(cuesheet.schema())
+
+
+@app.get("/api/voice", response_model=VoiceSupport)
+def get_voice() -> VoiceSupport:
+    """What the Azure voice can do here, so the page offers only a voice that exists (S29)."""
+    stored = clips.store()
+    return VoiceSupport(stored_clips={lang: stored.count(lang) for lang in clips.LANGS}, live=tts.live_configured())  # type: ignore[misc]
 
 
 @app.post("/api/tts", responses={501: {"model": ErrorResponse}})

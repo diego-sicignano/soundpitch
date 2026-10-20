@@ -135,6 +135,9 @@ test("S25: the page works under its content security policy", async ({ page }) =
   expect(problems).toEqual([]);
 });
 
+const withClips = (page: Page, stored = { en: 72, it: 68 }, live = false) =>
+  page.route("**/api/voice", (route) => route.fulfill({ json: { stored_clips: stored, live } }));
+
 async function watchAudio(page: Page) {
   await page.addInitScript(() => {
     const Real = window.Audio;
@@ -151,6 +154,7 @@ const playbackRates = (page: Page) => page.evaluate(() => (window as any).__audi
 
 test("S28: a stored clip is played at the chosen speed and the voice is said to be synthetic", async ({ page }) => {
   await watchAudio(page);
+  await withClips(page);
   await page.route("**/api/tts", (route) =>
     route.fulfill({ status: 200, headers: { "content-type": "audio/mpeg", "x-audio-rate": "1" }, body: Buffer.from("ID3") }),
   );
@@ -175,6 +179,7 @@ test("S28: a stored clip is played at the chosen speed and the voice is said to 
 
 test("S28: audio that already carries its speed, or says nothing about it, is played as it is", async ({ page }) => {
   await watchAudio(page);
+  await withClips(page);
   await page.route("**/api/tts", (route) =>
     route.fulfill({ status: 200, headers: { "content-type": "audio/mpeg", "x-audio-rate": "1.5" }, body: Buffer.from("ID3") }),
   );
@@ -191,6 +196,84 @@ test("S28: audio that already carries its speed, or says nothing about it, is pl
   await expect.poll(async () => (await playbackRates(page)).length).toBeGreaterThan(0);
   expect((await playbackRates(page)).every((r: number) => Math.abs(r - 1) < 0.01)).toBe(true); // 1.5 asked, 1.5 in the audio
 });
+
+test("S29: without stored clips or a key the Azure voice is not offered and the browser voice is the default", async ({ page }) => {
+  await ready(page);
+  const option = page.getByTestId("output").locator('option[value="azure"]');
+  await expect(option).toBeDisabled();
+  await expect(page.getByTestId("output")).toHaveValue("browser");
+  await expect(page.getByTestId("voice-note")).toContainText("not available");
+  await expect(page.getByTestId("voice-note")).not.toContainText("is synthetic");
+});
+
+test("S29: the Azure voice is offered where clips exist and withdrawn for a language that has none", async ({ page }) => {
+  await withClips(page, { en: 72, it: 0 });
+  await ready(page);
+  await expect(page.getByTestId("output").locator('option[value="azure"]')).toBeEnabled();
+  await expect(page.getByTestId("voice-note")).toContainText("synthetic");
+  await page.getByTestId("output").selectOption("azure");
+  await expect(page.getByTestId("status")).toContainText("Ready");
+  await page.getByTestId("lang").selectOption("it");
+  await expect(page.getByTestId("status")).toContainText("Ready");
+  await expect(page.getByTestId("output")).toHaveValue("browser"); // the choice cannot stay on a voice that is not there
+  await expect(page.getByTestId("status")).toContainText("Azure");
+  await expect(page.getByTestId("output").locator('option[value="azure"]')).toBeDisabled();
+  await page.getByTestId("lang").selectOption("en");
+  await expect(page.getByTestId("status")).toContainText("Ready");
+  await expect(page.getByTestId("output").locator('option[value="azure"]')).toBeEnabled();
+});
+
+test("S29: a live voice alone is enough to offer the Azure option", async ({ page }) => {
+  await withClips(page, { en: 0, it: 0 }, true);
+  await ready(page);
+  await expect(page.getByTestId("output").locator('option[value="azure"]')).toBeEnabled();
+});
+
+async function fakeSpeech(page: Page, voices: string[]) {
+  await page.addInitScript((langs: string[]) => {
+    const spoken: string[] = [];
+    (window as any).__spoken = spoken;
+    const fake = {
+      getVoices: () => langs.map((lang) => ({ lang, name: lang })),
+      speak: (u: SpeechSynthesisUtterance) => spoken.push(u.text),
+      cancel() {}, pause() {}, resume() {}, addEventListener() {},
+    };
+    Object.defineProperty(window, "speechSynthesis", { value: fake, configurable: true });
+  }, voices);
+}
+
+test("S30: with no browser voice for the language the page says so and the captions keep going", async ({ page }) => {
+  await fakeSpeech(page, ["it-IT"]);
+  await page.goto("/?speed=1&preset=goal_1");
+  await expect(page.getByTestId("status")).toContainText("Ready");
+  await page.getByTestId("play").click();
+  await expect(page.getByTestId("status")).toContainText("no English voice");
+  await expect(page.getByTestId("status")).toContainText("screen reader");
+  await expect(page.getByTestId("captions")).not.toBeEmpty({ timeout: 15_000 });
+  await expect(page.getByTestId("play")).toHaveText("Pause"); // it still plays
+});
+
+test("S30: with a voice for the language there is no such message and the cues are spoken", async ({ page }) => {
+  await fakeSpeech(page, ["en-GB"]);
+  await page.goto("/?speed=40&preset=goal_1");
+  await expect(page.getByTestId("status")).toContainText("Ready");
+  await page.getByTestId("play").click();
+  await expect(page.getByTestId("status")).toHaveText("The clip has finished.", { timeout: 15_000 });
+  const spoken = await page.evaluate(() => (window as any).__spoken as string[]);
+  expect(spoken.length).toBeGreaterThan(0);
+});
+
+test("S30: a browser with no speech synthesis at all gets the same honest message", async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(window, "speechSynthesis", { value: undefined, configurable: true });
+    delete (window as any).speechSynthesis;
+  });
+  await page.goto("/?speed=1&preset=goal_1");
+  await expect(page.getByTestId("status")).toContainText("Ready");
+  await page.getByTestId("play").click();
+  await expect(page.getByTestId("status")).toContainText("cannot speak aloud");
+});
+
 
 test("S9: no accessibility violations before and after playing", async ({ page }) => {
   await ready(page);

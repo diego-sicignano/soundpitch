@@ -46,6 +46,20 @@ class ClipStore:
             return None
         return data if 0 < len(data) <= MAX_CLIP_BYTES else None
 
+    def count(self, lang: str) -> int:
+        """How many clips of `lang` `get` would serve (S29): the manifest lists them and the file is present and sane."""
+        found = 0
+        for key, entry in self.clips.items():
+            if not (isinstance(entry, dict) and entry.get("lang") == lang and isinstance(entry.get("text"), str)):
+                continue
+            if lang not in LANGS or clip_id(lang, entry["text"]) != key:
+                continue
+            try:  # a stat, not a read: this runs on every page load and the clips are megabytes in all
+                found += 0 < (self.root / lang / f"{key}.mp3").stat().st_size <= MAX_CLIP_BYTES
+            except OSError:
+                pass
+        return found
+
 
 def read_manifest(root: Path) -> dict:
     """The manifest on disk, or an empty one if it is missing or unusable."""
