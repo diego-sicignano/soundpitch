@@ -22,8 +22,9 @@ ENV = (
 
 @pytest.fixture(autouse=True)
 def clean(monkeypatch):
-    for name in ENV:
+    for name in ENV + ("SOUNDPITCH_LOG_FORWARDED",):
         monkeypatch.delenv(name, raising=False)
+    main.SHAPES.clear()
     tts.reset()
     main._session.cache_clear()
     yield
@@ -72,8 +73,10 @@ def test_a_session_that_is_not_kept_still_issues_its_texts(monkeypatch):
     assert say(text).status_code == 200 and azure.calls == 1
 
 
-def test_not_configured_is_reported_before_the_text_check():
-    assert say("anything").status_code == 501
+def test_the_order_of_the_checks_is_issued_text_then_clip_then_configuration():
+    assert say("anything").status_code == 403  # not issued: refused whatever the configuration
+    tts.issue("en", ["Goal!"])
+    assert say("Goal!").status_code == 501  # issued, no stored clip, no Speech key
 
 
 def test_input_is_validated_first(monkeypatch):
@@ -227,3 +230,90 @@ def test_the_per_client_limit_is_exact_under_threads(monkeypatch):
     for w in workers:
         w.join()
     assert sum(results) == 10
+
+
+# ---- S27: the client address behind a proxy ---------------------------------------------------------------
+
+
+def forwarded(*lines):
+    return {"headers": [("X-Forwarded-For", line) for line in lines]}
+
+
+@pytest.mark.parametrize(
+    "first, second",
+    [
+        ("203.0.113.7", "203.0.113.7:51234"),
+        ("203.0.113.7:40000", "203.0.113.7:51234"),
+        ("2001:db8::1", "[2001:db8::1]:51234"),
+        ("[2001:db8::1]", "[2001:db8:0:0:0:0:0:1]:9"),
+        ("9.9.9.9, 203.0.113.7", "1.1.1.1,203.0.113.7:2"),
+        ("  203.0.113.7  ", "203.0.113.7"),
+    ],
+)
+def test_the_same_address_in_any_form_and_port_is_one_client(monkeypatch, first, second):
+    Azure(monkeypatch)
+    monkeypatch.setenv("SOUNDPITCH_TRUST_PROXY", "1")
+    monkeypatch.setenv("SOUNDPITCH_TTS_PER_CLIENT_PER_MINUTE", "1")
+    tts.issue("en", ["One", "Two"])
+    assert say("One", **forwarded(first)).status_code == 200
+    assert say("Two", **forwarded(second)).status_code == 429
+
+
+def test_another_address_is_another_client(monkeypatch):
+    Azure(monkeypatch)
+    monkeypatch.setenv("SOUNDPITCH_TRUST_PROXY", "1")
+    monkeypatch.setenv("SOUNDPITCH_TTS_PER_CLIENT_PER_MINUTE", "1")
+    tts.issue("en", ["One", "Two", "Three"])
+    assert say("One", **forwarded("203.0.113.7:1")).status_code == 200
+    assert say("Two", **forwarded("203.0.113.8:1")).status_code == 200
+    assert say("Three", **forwarded("[2001:db8::2]:1")).status_code == 200
+
+
+@pytest.mark.parametrize("junk", ["", "unknown", "garbage:1", "999.1.1.1", "1.2.3", "[::1", ",", "203.0.113.7:abc:def"])
+def test_a_value_that_is_not_an_address_falls_back_to_the_connection_address(monkeypatch, junk):
+    Azure(monkeypatch)
+    monkeypatch.setenv("SOUNDPITCH_TRUST_PROXY", "1")
+    monkeypatch.setenv("SOUNDPITCH_TTS_PER_CLIENT_PER_MINUTE", "1")
+    tts.issue("en", ["One", "Two"])
+    assert say("One").status_code == 200  # no header: the connection's address
+    assert say("Two", **forwarded(junk)).status_code == 429  # the same fallback bucket
+
+
+def test_the_last_header_line_and_its_last_entry_decide(monkeypatch):
+    Azure(monkeypatch)
+    monkeypatch.setenv("SOUNDPITCH_TRUST_PROXY", "1")
+    monkeypatch.setenv("SOUNDPITCH_TTS_PER_CLIENT_PER_MINUTE", "1")
+    tts.issue("en", ["One", "Two", "Three"])
+    assert say("One", **forwarded("1.1.1.1", "2.2.2.2, 203.0.113.7")).status_code == 200
+    assert say("Two", **forwarded("3.3.3.3", "4.4.4.4, 203.0.113.7:77")).status_code == 429
+    assert say("Three", **forwarded("203.0.113.7", "203.0.113.9")).status_code == 200  # last line, not first
+
+
+def test_the_header_is_ignored_without_the_trust_setting(monkeypatch):
+    Azure(monkeypatch)
+    monkeypatch.setenv("SOUNDPITCH_TTS_PER_CLIENT_PER_MINUTE", "1")
+    tts.issue("en", ["One", "Two"])
+    assert say("One", **forwarded("203.0.113.7")).status_code == 200
+    assert say("Two", **forwarded("203.0.113.8")).status_code == 429
+
+
+def test_the_shape_of_the_header_is_logged_without_any_address(monkeypatch, caplog):
+    import logging
+
+    monkeypatch.setenv("SOUNDPITCH_LOG_FORWARDED", "1")
+    with caplog.at_level(logging.INFO, logger="soundpitch.api"):
+        for value in ("203.0.113.7:51234", "198.51.100.4:40000", "[2001:db8:ab::1]:9"):
+            client.get("/api/health", headers={"X-Forwarded-For": value})
+        client.get("/api/health", headers={"X-Forwarded-For": "203.0.113.8:51234"})  # same shape as the first
+    records = [r for r in caplog.records if "X-Forwarded-For shape" in r.getMessage()]
+    assert all(r.levelno >= logging.WARNING for r in records)  # no logging is configured: only warnings reach a container's console
+    shapes = [r.getMessage() for r in records]
+    assert len(shapes) == 3 and len(set(shapes)) == 3  # four values, three distinct shapes, one logged each
+    text = " ".join(shapes)
+    assert "999.9.999.9:99999" in text and "[9999:xx" in text
+    for secret in ("203", "198", "51234", "40000", "db8", "ab::"):
+        assert secret not in text
+    caplog.clear()
+    monkeypatch.delenv("SOUNDPITCH_LOG_FORWARDED")
+    client.get("/api/health", headers={"X-Forwarded-For": "5.5.5.5:5"})
+    assert not [r for r in caplog.records if "X-Forwarded-For shape" in r.getMessage()]

@@ -1,7 +1,9 @@
 """HTTP API and the static one-page UI (SPEC §8, §9)."""
 
+import ipaddress
 import logging
 import os
+import re
 import threading
 from collections import OrderedDict
 from pathlib import Path
@@ -49,6 +51,7 @@ DOCS_PATHS = ("/docs", "/redoc", "/openapi.json")  # the interactive documentati
 
 @app.middleware("http")
 async def security_headers(request: Request, call_next):
+    _note_forwarded(request)
     try:
         response = await call_next(request)
     except Exception:
@@ -182,13 +185,49 @@ def get_session_vtt(
     return Response(webvtt(session.cues), media_type="text/vtt")
 
 
+def _address_of(entry: str) -> str | None:
+    """The address in one X-Forwarded-For entry, whatever form the proxy wrote it in: `1.2.3.4`, `1.2.3.4:5678`,
+    `[2001:db8::1]:5678`, `2001:db8::1` or `[2001:db8::1]`. None if it is not an address."""
+    entry = entry.strip()
+    if entry.startswith("["):
+        if "]" not in entry:
+            return None
+        host = entry[1:].split("]", 1)[0]
+    elif entry.count(":") == 1:
+        host = entry.split(":", 1)[0]
+    else:
+        host = entry
+    try:
+        return str(ipaddress.ip_address(host))
+    except ValueError:
+        return None
+
+
 def _client_id(request: Request) -> str:
-    """The caller's address. The last X-Forwarded-For entry is the one the trusted proxy appended."""
+    """The caller's address: the last entry of the last X-Forwarded-For line when a trusted proxy wrote it
+    (SOUNDPITCH_TRUST_PROXY=1), else the connection's address. Anything that is not an address falls back too."""
     if os.environ.get("SOUNDPITCH_TRUST_PROXY") == "1":
-        last = request.headers.get("x-forwarded-for", "").split(",")[-1].strip()
-        if last:
-            return last
+        lines = request.headers.getlist("x-forwarded-for")
+        if lines:
+            address = _address_of(lines[-1].rsplit(",", 1)[-1])
+            if address:
+                return address
     return request.client.host if request.client else "unknown"
+
+
+SHAPES: set[str] = set()
+
+
+def _note_forwarded(request: Request) -> None:
+    """With SOUNDPITCH_LOG_FORWARDED=1, log the shape of X-Forwarded-For (digits as 9, hex letters as x), never an
+    address, for up to five distinct shapes: enough to settle how a real proxy writes it."""
+    if os.environ.get("SOUNDPITCH_LOG_FORWARDED") != "1" or len(SHAPES) >= 5:
+        return
+    for line in request.headers.getlist("x-forwarded-for"):
+        shape = re.sub(r"[^ -~]", "?", re.sub(r"[0-9]", "9", re.sub(r"[a-fA-F]", "x", line)))[:60]
+        if shape not in SHAPES and len(SHAPES) < 5:
+            SHAPES.add(shape)
+            log.warning("X-Forwarded-For shape: %s", shape)  # a warning: no logging is configured, so INFO would not show
 
 
 @app.get(
@@ -227,7 +266,7 @@ def post_tts(request: Request, body: TtsRequest):
         return _error(429, "rate_limited", str(exc))
     except tts.TtsFailed as exc:
         return _error(502, "tts_failed", str(exc))
-    return Response(audio, media_type="audio/mpeg")
+    return Response(audio.data, media_type="audio/mpeg", headers={"X-Audio-Rate": f"{audio.rate:g}"})
 
 
 if FRONTEND.is_dir():

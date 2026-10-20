@@ -12,10 +12,12 @@ import threading
 import time
 from collections import OrderedDict, deque
 from collections.abc import Iterable
+from dataclasses import dataclass
 from xml.sax.saxutils import escape
 
 import httpx
 
+from app import clips
 from app.contracts import Lang
 
 VOICES: dict[Lang, tuple[str, str]] = {
@@ -137,34 +139,21 @@ def make_client() -> httpx.Client:
 
 def ssml(text: str, lang: Lang, rate: float) -> str:
     locale, voice = VOICES[lang]
-    percent = f"{round((rate - 1) * 100):+d}%"
-    return (
-        f"<speak version='1.0' xml:lang='{locale}'><voice name='{voice}'>"
-        f"<prosody rate='{percent}'>{escape(text)}</prosody></voice></speak>"
-    )
+    percent = round((rate - 1) * 100)
+    body = escape(text) if percent == 0 else f"<prosody rate='{percent:+d}%'>{escape(text)}</prosody>"  # markup is billed
+    return f"<speak version='1.0' xml:lang='{locale}'><voice name='{voice}'>{body}</voice></speak>"
 
 
-def synthesize(text: str, lang: Lang, rate: float, client: str = "local") -> bytes:
-    key, region = os.environ.get("AZURE_SPEECH_KEY"), os.environ.get("AZURE_SPEECH_REGION")
-    if not key or not region:
-        raise NotConfigured("Azure AI Speech is not configured")
-    clip = (lang, text, round((rate - 1) * 100))
-    with _lock:
-        if (lang, text) not in _issued:
-            raise NotIssued("Only the text of a returned session can be spoken")
-        now = CLOCK()
-        if not _per_client_allowed(client, now):
-            raise RateLimited("Too many speech requests from this client, try again in a minute")
-        if clip in _audio:
-            _audio.move_to_end(clip)
-            return _audio[clip]
-        _slide(_sent, now)
-        if len(_sent) >= _limit("SOUNDPITCH_TTS_PER_MINUTE", DEFAULT_PER_MINUTE):
-            raise RateLimited("Too many speech requests, try again in a minute")
-        over = _reserve_characters(len(text), now)
-        if over:
-            raise RateLimited(f"The speech character limit for the {over} was reached")
-        _sent.append(now)
+class TtsHttpError(TtsFailed):
+    """Azure answered with an error status (or, with `status` None, could not be reached)."""
+
+    def __init__(self, message: str, status: int | None = None):
+        super().__init__(message)
+        self.status = status
+
+
+def call_azure(key: str, region: str, text: str, lang: Lang, rate: float) -> bytes:
+    """One synthesis request. Raises TtsHttpError; the message never contains the key."""
     headers = {
         "Ocp-Apim-Subscription-Key": key,
         "Content-Type": "application/ssml+xml",
@@ -179,11 +168,47 @@ def synthesize(text: str, lang: Lang, rate: float, client: str = "local") -> byt
                 headers=headers,
             )
     except httpx.HTTPError as exc:
-        raise TtsFailed(f"Azure AI Speech is unreachable ({type(exc).__name__})") from exc
+        raise TtsHttpError(f"Azure AI Speech is unreachable ({type(exc).__name__})") from exc
     if response.status_code != 200:
-        raise TtsFailed(f"Azure AI Speech returned {response.status_code}")
+        raise TtsHttpError(f"Azure AI Speech returned {response.status_code}", response.status_code)
+    return response.content
+
+
+@dataclass(frozen=True)
+class Audio:
+    data: bytes
+    rate: float  # the speech rate already in the audio: 1 for a stored clip, the requested rate when synthesised
+
+
+def synthesize(text: str, lang: Lang, rate: float, client: str = "local") -> Audio:
+    percent = round((rate - 1) * 100)
     with _lock:
-        _audio[clip] = response.content
+        if (lang, text) not in _issued:
+            raise NotIssued("Only the text of a returned session can be spoken")
+        if not _per_client_allowed(client, CLOCK()):
+            raise RateLimited("Too many speech requests from this client, try again in a minute")
+    stored = clips.get(lang, text)
+    if stored is not None:
+        return Audio(stored, 1.0)
+    key, region = os.environ.get("AZURE_SPEECH_KEY"), os.environ.get("AZURE_SPEECH_REGION")
+    if not key or not region:
+        raise NotConfigured("Azure AI Speech is not configured")
+    clip = (lang, text, percent)
+    with _lock:
+        if clip in _audio:
+            _audio.move_to_end(clip)
+            return Audio(_audio[clip], 1 + percent / 100)
+        now = CLOCK()
+        _slide(_sent, now)
+        if len(_sent) >= _limit("SOUNDPITCH_TTS_PER_MINUTE", DEFAULT_PER_MINUTE):
+            raise RateLimited("Too many speech requests, try again in a minute")
+        over = _reserve_characters(len(text), now)
+        if over:
+            raise RateLimited(f"The speech character limit for the {over} was reached")
+        _sent.append(now)
+    data = call_azure(key, region, text, lang, rate)
+    with _lock:
+        _audio[clip] = data
         while len(_audio) > AUDIO_MAX:
             _audio.popitem(last=False)
-    return response.content
+    return Audio(data, 1 + percent / 100)

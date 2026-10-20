@@ -172,6 +172,16 @@ def _verified(
     return accepted, attempt
 
 
+def verified_descriptions(
+    match: Match, preset: Preset, profile: Profile, describer: Describer
+) -> dict[int, tuple[Description, str]]:
+    """What the pipeline accepts for a window, by moment: the verified descriptions or the template fallback."""
+    ctx = Context(match, profile.lang)
+    moments = detect_moments(window_of(match, preset), profile.detail)
+    accepted, _ = _verified(moments, ctx, describer, [])
+    return accepted
+
+
 def window_of(match: Match, preset: Preset) -> list:
     return [e for e in match.events if preset.from_s <= e.t <= preset.to_s]
 

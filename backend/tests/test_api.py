@@ -78,6 +78,7 @@ def stub_azure(monkeypatch, handler):
 
 
 def test_tts_is_not_implemented_without_azure_settings():
+    tts.issue("en", ["Goal!"])
     response = client.post("/api/tts", json={"text": "Goal!"})
     assert response.status_code == 501 and response.json()["code"] == "tts_not_configured"
 

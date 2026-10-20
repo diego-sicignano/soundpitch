@@ -184,7 +184,12 @@ async function fetchAzure(cue) {
     say("Azure voice is not configured on this server. Using the browser voice.");
     return null;
   }
-  return response.ok ? response.blob() : null;
+  if (!response.ok) return null;
+  const blob = await response.blob();
+  // A stored clip is at normal speed (X-Audio-Rate: 1) and is sped up here; a live clip already has the speed.
+  const audioRate = Number(response.headers.get("X-Audio-Rate"));
+  blob.playbackFactor = audioRate > 0 ? effectiveRate() / audioRate : 1;
+  return blob;
 }
 
 function prefetchAzure(session, token) {
@@ -207,6 +212,8 @@ async function speak(cue) {
     const blob = await (audioByCue.get(cue.id) || fetchAzure(cue).catch(() => null));
     if (blob) {
       currentAudio = new Audio(URL.createObjectURL(blob));
+      currentAudio.preservesPitch = true;
+      currentAudio.playbackRate = blob.playbackFactor || 1;
       return currentAudio.play().catch(() => browserSpeak(cue.text));
     }
   }

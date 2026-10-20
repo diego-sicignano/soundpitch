@@ -135,6 +135,63 @@ test("S25: the page works under its content security policy", async ({ page }) =
   expect(problems).toEqual([]);
 });
 
+async function watchAudio(page: Page) {
+  await page.addInitScript(() => {
+    const Real = window.Audio;
+    (window as any).__audios = [];
+    (window as any).Audio = function (src?: string) {
+      const audio = new Real(src);
+      (window as any).__audios.push(audio);
+      return audio;
+    };
+  });
+}
+
+const playbackRates = (page: Page) => page.evaluate(() => (window as any).__audios.map((a: HTMLAudioElement) => a.playbackRate));
+
+test("S28: a stored clip is played at the chosen speed and the voice is said to be synthetic", async ({ page }) => {
+  await watchAudio(page);
+  await page.route("**/api/tts", (route) =>
+    route.fulfill({ status: 200, headers: { "content-type": "audio/mpeg", "x-audio-rate": "1" }, body: Buffer.from("ID3") }),
+  );
+  await page.goto("/?speed=40&preset=goal_1");
+  await expect(page.getByTestId("status")).toContainText("Ready");
+  const note = page.getByTestId("voice-note");
+  await expect(note).toBeVisible();
+  await expect(note).toContainText("synthetic");
+  expect(await page.getByTestId("output").getAttribute("aria-describedby")).toContain("voice-note");
+  await page.getByTestId("rate").evaluate((el: HTMLInputElement) => {
+    el.value = "1.5";
+    el.dispatchEvent(new Event("input"));
+    el.dispatchEvent(new Event("change"));
+  });
+  await page.getByTestId("output").selectOption("azure");
+  await expect(page.getByTestId("status")).toContainText("Ready");
+  await page.getByTestId("play").click();
+  await expect.poll(async () => (await playbackRates(page)).length).toBeGreaterThan(0);
+  expect((await playbackRates(page)).every((r: number) => Math.abs(r - 1.5) < 0.01)).toBe(true);
+  expect(await page.evaluate(() => (window as any).__audios.every((a: HTMLAudioElement) => a.preservesPitch !== false))).toBe(true);
+});
+
+test("S28: audio that already carries its speed, or says nothing about it, is played as it is", async ({ page }) => {
+  await watchAudio(page);
+  await page.route("**/api/tts", (route) =>
+    route.fulfill({ status: 200, headers: { "content-type": "audio/mpeg", "x-audio-rate": "1.5" }, body: Buffer.from("ID3") }),
+  );
+  await page.goto("/?speed=40&preset=goal_1");
+  await expect(page.getByTestId("status")).toContainText("Ready");
+  await page.getByTestId("rate").evaluate((el: HTMLInputElement) => {
+    el.value = "1.5";
+    el.dispatchEvent(new Event("input"));
+    el.dispatchEvent(new Event("change"));
+  });
+  await page.getByTestId("output").selectOption("azure");
+  await expect(page.getByTestId("status")).toContainText("Ready");
+  await page.getByTestId("play").click();
+  await expect.poll(async () => (await playbackRates(page)).length).toBeGreaterThan(0);
+  expect((await playbackRates(page)).every((r: number) => Math.abs(r - 1) < 0.01)).toBe(true); // 1.5 asked, 1.5 in the audio
+});
+
 test("S9: no accessibility violations before and after playing", async ({ page }) => {
   await ready(page);
   const before = await new AxeBuilder({ page }).analyze();
