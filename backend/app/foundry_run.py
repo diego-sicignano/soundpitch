@@ -22,12 +22,16 @@ from pathlib import Path
 from app.contracts import Profile
 from app.describer import LEX, Context, facts
 from app.foundry import (
+    MAX_BATCH,
     AgentFrameworkClient,
     FoundryDescriber,
     FoundryNotConfigured,
     LlmClient,
     Reply,
+    build_prompt,
+    chunk_key,
     ledger_from_env,
+    reply_key,
     settings_from_env,
 )
 from app.match_gen import SEED, generate_match
@@ -53,14 +57,12 @@ REASONS = (
 class TimedClient:
     """Wraps an LlmClient to record how long each call took and whether it failed."""
 
-    def __init__(self, inner: LlmClient, pause_s: float = 0.0):
+    def __init__(self, inner: LlmClient):
         self.inner = inner
-        self.pause_s = pause_s
         self.durations: list[float] = []
         self.errors = 0
 
     def complete(self, system: str, user: str) -> str | Reply:
-        time.sleep(self.pause_s)  # keeps a run under the deployment's tokens-per-minute ceiling
         started = time.monotonic()
         try:
             return self.inner.complete(system, user)
@@ -69,6 +71,33 @@ class TimedClient:
             raise
         finally:
             self.durations.append(time.monotonic() - started)
+
+
+class Paced:
+    """Waits before each request to the model, outside the call: a pause inside the call would count against the
+    describer's timeout and make every real call fail. It keeps a run under the deployment's tokens-per-minute
+    ceiling and under the ledger's calls-per-minute limit, which count reservations, not answers."""
+
+    def __init__(self, inner: FoundryDescriber, pause_s: float):
+        self.inner, self.pause_s = inner, pause_s
+
+    @property
+    def note(self) -> str:
+        return self.inner.note
+
+    def _will_ask(self, moments, ctx, feedback, attempt) -> bool:
+        """True if any request of this attempt is not already stored in the ledger (a stored one costs nothing)."""
+        for start in range(0, len(moments), MAX_BATCH):
+            chunk = moments[start : start + MAX_BATCH]
+            system, _ = build_prompt(chunk, ctx, feedback)
+            if self.inner.ledger.cache_get(reply_key(chunk_key(chunk, ctx, feedback, attempt), system)) is None:
+                return True
+        return False
+
+    def describe(self, moments, ctx, feedback, attempt):
+        if self._will_ask(moments, ctx, feedback, attempt):
+            time.sleep(self.pause_s)
+        return self.inner.describe(moments, ctx, feedback, attempt)
 
 
 def reason_of(issue: str) -> str:
@@ -95,8 +124,8 @@ def template_texts(moment, ctx: Context) -> set[str]:
 def run(client: LlmClient, ledger: UsageLedger, pause_s: float = 0.0) -> dict:
     """Every preset, detail level and language through the real pipeline with this client."""
     match = generate_match(SEED)
-    timed = TimedClient(client, pause_s)
-    describer = FoundryDescriber(timed, ledger)
+    timed = TimedClient(client)
+    describer = Paced(FoundryDescriber(timed, ledger), pause_s)
     stats = {lang: Counter() for lang in LANGS}
     reasons = {lang: Counter() for lang in LANGS}
     words = {lang: Counter() for lang in LANGS}

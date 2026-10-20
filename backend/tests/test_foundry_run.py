@@ -97,3 +97,36 @@ def test_a_pause_between_calls_keeps_a_run_under_the_deployments_token_ceiling(t
     calls = len(result["latency"])
     assert calls > 5 and time.monotonic() - started >= 0.9 * 0.05 * calls
     assert foundry_run.main(["--pause-seconds", "0"], client=Fake(), model="m", ledger=fresh(tmp_path, "main")) == 0
+
+
+def test_the_pause_comes_before_each_call_and_never_inside_it(tmp_path, monkeypatch):
+    """A pause inside the call counts against the describer's 20 s timeout: it made every real call fail."""
+    log: list[str] = []
+    monkeypatch.setattr(foundry_run.time, "sleep", lambda seconds: log.append("sleep"))
+
+    class Spy(Fake):
+        def complete(self, system, user):
+            log.append("call")
+            return super().complete(system, user)
+
+    foundry_run.run(Spy(), fresh(tmp_path, "spy"), pause_s=31)
+    assert "call" in log and all(log[i - 1] == "sleep" for i, entry in enumerate(log) if entry == "call")
+    log.clear()
+    foundry_run.TimedClient(Spy()).complete("system", '{"moments": []}')  # the timed wrapper itself never sleeps
+    assert log == ["call"]
+
+
+def test_a_request_already_stored_in_the_ledger_is_neither_paused_for_nor_asked_again(tmp_path, monkeypatch):
+    """Resuming a run with the same ledger must cost neither calls nor waiting for what is already paid for."""
+    ledger = fresh(tmp_path, "resume")
+    first = Fake()
+    foundry_run.run(first, ledger)
+    assert first.calls
+    sleeps: list[float] = []
+    monkeypatch.setattr(foundry_run.time, "sleep", lambda seconds: sleeps.append(seconds))
+    second = Fake()
+    foundry_run.run(second, ledger, pause_s=31)
+    assert second.calls == [] and sleeps == []
+    third = Fake()
+    foundry_run.run(third, fresh(tmp_path, "new"), pause_s=31)  # a fresh ledger still waits before each call
+    assert third.calls and len(sleeps) >= len(third.calls)
