@@ -88,19 +88,20 @@ You keep ownership, but you grant Microsoft and the Premier League a worldwide, 
 | Rule | SoundPitch status |
 |---|---|
 | Synthetic data only | Yes: a seeded generator, no real footage or data. |
-| Five-stage pipeline | Ingest, Interpret, Explain, Verify, Render, Personalize are all implemented (see `SPEC.md` section 2). |
-| Render as timed, machine-readable output | Cues, earcons and WebVTT with millisecond timings. A versioned JSON Schema for the cue sheet is still to do (`ROADMAP.md`). |
+| Five-stage pipeline | Ingest, Interpret, Render and Personalize are implemented (see `SPEC.md` section 2). Two honest gaps against section 4.1: "Explain" says **what** happened and who was involved, not **why a moment matters** (the verifier forbids opinion on purpose); and "Interpret" produces prioritised moments, not statistics or patterns. Personalization is an accessibility profile, not a favourite club or player (T09, optional). |
+| Render as timed, machine-readable output | Cues, earcons and WebVTT with millisecond timings. The cue sheet has a versioned JSON Schema (`docs/contracts/cuesheet.v1.schema.json`). |
 | Two genuinely different experiences | Blind and low-vision listening, captions for deaf and hard-of-hearing fans, calm mode, three detail levels, two languages. |
-| "Hero technologies" | **Gap.** Azure AI Speech has a REST client (untested against a real key). Foundry, Agent Framework, MCP and Azure hosting are not done yet. Criterion 1 is the tie-breaker, so this matters most. |
-| Multi-agent category | The roles exist (moment detector, describer, verifier, timing planner, renderer) but run as plain Python, not on Agent Framework. |
+| "Hero technologies" | **Partly met.** Foundry: run live once (26 calls), replay mode for the demo. Agent Framework: `FoundryChatClient` and a workflow (`workflow.py`). Not yet: Azure AI Speech with a real key (T04), Azure Container Apps hosting (T06), MCP (T08, optional). Criterion 1 is the tie-breaker, so this matters most. |
+| Multi-agent category | The roles (moment detector, describer, verifier, fallback, timing planner) are executors of an Agent Framework workflow with a conditional retry edge. Only the describer touches a model, so this is orchestration of one model and deterministic code, not a team of autonomous agents; say so plainly. |
 | Public repo, public demo until 10 Nov, video under 2 minutes | Not done yet. See [`SUBMISSION_CHECKLIST.md`](SUBMISSION_CHECKLIST.md). |
 | No third-party trademarks in the video | Teams are fictional (Northgate Red, Harbour Blue). Use no Premier League or Microsoft logos in the video without checking permission. |
 
-## Questions only you can settle
+## Points to keep in mind
 
-- **Original work (4.6, 4.11):** the rules require the submission to be your own original work, solely owned by you. Decide how you will describe the tools you used to build it, including AI coding assistants, and be ready to explain your role in it (8.2 asks winners to verify their "role ... in the creation of the Submission").
-- **Team:** solo, or up to four people. A team needs a Representative who registers and submits.
-- **Commit email:** the commits carry a personal email. On GitHub you can use a `noreply` address instead.
-- **Trademarks:** do not show Premier League or Microsoft logos in the video without permission (4.4).
+- **Original work (4.6, 4.11):** the rules require the submission to be the entrant's own original work, solely owned. The README states that an AI coding assistant was used; the specification and the decisions are in the repository. 8.2 asks winners to verify their "role ... in the creation of the Submission".
+- **Participation:** individual.
+- **Commit email:** commits use the author's GitHub `noreply` address.
+- **Trademarks:** do not show Premier League or Microsoft logos in the video without permission (4.4); the README says the project is not affiliated with either.
 - **Voice-over:** use your own voice, or a synthetic voice whose licence allows it. No music.
+- **Judge access (4.8):** the rules say "free of charge and without any restriction" until the judging period ends and do not define "restriction". The judges' path therefore makes no model call and has no daily quota (`docs/DECISIONS.md` D12).
 
