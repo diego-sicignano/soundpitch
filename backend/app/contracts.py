@@ -1,6 +1,6 @@
 """Wire contracts for SoundPitch (SPEC §3-§8). Every model rejects unknown fields."""
 
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -131,11 +131,12 @@ class Cue(Contract):
     pan: float
 
 
+EarconKind = Literal["tick", "turnover", "shot", "save", "goal", "set_piece", "whistle", "whistle_long"]
+
+
 class Earcon(Contract):
     t_ms: int
-    kind: Literal[
-        "tick", "turnover", "shot", "save", "goal", "set_piece", "whistle", "whistle_long"
-    ]
+    kind: EarconKind
     pan: float
     pitch: float
     gain: float
@@ -160,6 +161,7 @@ class TraceStep(Contract):
     status: Literal["ok", "failed"]
     attempt: int
     detail: str
+    executor: str | None = None  # the workflow executor that ran the step (SPEC §12); None in the plain pipeline
 
 
 class PriorityStats(Contract):
@@ -196,6 +198,50 @@ class Session(Contract):
     report: Report
 
 
+class _TimedText(Contract):
+    id: str
+    at_ms: int = Field(ge=0)
+    duration_ms: int = Field(gt=0)
+    priority: int = Field(ge=0, le=3)
+    event_ids: list[int]
+    text: str
+    status: Literal["verified", "fallback"]
+
+
+class CueSheetDescription(_TimedText):
+    type: Literal["audio_description"]
+
+
+class CueSheetCaption(_TimedText):
+    type: Literal["caption"]
+
+
+class CueSheetBallSound(Contract):
+    id: str
+    type: Literal["ball_sound"]
+    at_ms: int = Field(ge=0)
+    sound: EarconKind
+    pan: float = Field(ge=-1, le=1)
+    pitch: float = Field(ge=0, le=1)
+    gain: float = Field(ge=0, le=1)
+
+
+CueSheetItem = Annotated[
+    CueSheetDescription | CueSheetCaption | CueSheetBallSound, Field(discriminator="type")
+]
+
+
+class CueSheet(Contract):
+    """The flat, versioned output for graphics and captioning systems (SPEC §13)."""
+
+    schema_version: Literal[1]  # required, so a consumer can enforce the version
+    preset: str
+    lang: Lang
+    match_clock_from: str = Field(pattern=r"^\d{2,}:\d{2}$")
+    duration_ms: int = Field(gt=0)
+    items: list[CueSheetItem]
+
+
 class MatchHeader(Contract):
     seed: int
     home: TeamInfo
@@ -218,6 +264,21 @@ class TtsRequest(Contract):
     rate: float = Field(default=1.0, ge=0.5, le=2.0)
 
 
+class VoiceSupport(Contract):
+    """What the Azure voice can do on this server (SPEC §8, S29): stored clips per language, and whether Speech is configured."""
+
+    stored_clips: dict[Lang, int]
+    live: bool
+
+
 class ErrorResponse(Contract):
-    code: Literal["preset_not_found", "tts_not_configured", "tts_failed", "rate_limited"]
+    code: Literal[
+        "preset_not_found",
+        "tts_not_configured",
+        "tts_text_not_issued",
+        "tts_failed",
+        "rate_limited",
+        "llm_not_configured",
+        "internal_error",
+    ]
     message: str

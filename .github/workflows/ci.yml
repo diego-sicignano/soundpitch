@@ -3,6 +3,7 @@ name: ci
 on:
   push:
   pull_request:
+  workflow_dispatch:  # the only way to publish an image: Actions tab, Run workflow, on main
 
 jobs:
   backend:
@@ -17,6 +18,18 @@ jobs:
       - run: python -m pip install -r backend/requirements-dev.txt
       - run: ruff check .
         working-directory: backend
+      - run: python -m pytest -q
+        working-directory: backend
+
+  # The optional Microsoft Agent Framework / Foundry packages: the tests that need them are skipped above.
+  sdk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: python -m pip install -r backend/requirements-dev.txt -r backend/requirements-agents.txt
       - run: python -m pytest -q
         working-directory: backend
 
@@ -36,13 +49,39 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm run e2e
 
+  # The judges' image: built, run as it is deployed (non-root, read-only file system, no capabilities) and smoke-tested.
   docker:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - run: docker build -t soundpitch .
       - run: |
-          docker run -d -p 8000:8000 --name soundpitch soundpitch
-          for i in $(seq 1 20); do curl -fs http://localhost:8000/api/health && exit 0; sleep 1; done
+          docker run -d --read-only --cap-drop ALL --security-opt no-new-privileges -p 8000:8000 --name soundpitch soundpitch
+          for i in $(seq 1 30); do curl -fs http://localhost:8000/api/health && break; sleep 1; done
+          test "$(docker exec soundpitch id -u)" = "10001"
+          docker exec soundpitch python -m app.smoke http://127.0.0.1:8000 || { docker logs soundpitch; exit 1; }
+          for i in $(seq 1 12); do test "$(docker inspect -f '{{.State.Health.Status}}' soundpitch)" = "healthy" && exit 0; sleep 5; done
           docker logs soundpitch
           exit 1
+
+  # Publishes the tested commit as an image on ghcr.io, tagged with the commit SHA (never `latest`). A push or a pull
+  # request never publishes: it runs only when someone starts this workflow by hand on main, after every other job,
+  # with the built-in token. CI holds no Azure identity and no other secret.
+  # A new package is private; making it public is a manual step (docs/DEPLOY.md).
+  publish:
+    needs: [backend, sdk, e2e, docker]
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/soundpitch:${GITHUB_SHA}"
+          echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          docker build -t "$image" .
+          docker push "$image"
+          echo "published $image"

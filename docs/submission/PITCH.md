@@ -10,9 +10,9 @@ SoundPitch lets a blind or low-vision fan follow a football match by ear: a time
 
 For a blind fan, football commentary assumes you can see the pitch. Audio description exists, but it is rare and mostly done by volunteers. SoundPitch generates it from match events.
 
-It works in five steps. A synthetic match streams events. Code turns them into prioritised moments. A describer, a model on **Microsoft Foundry** [confirm], writes each sentence. A verifier checks every name, number and fact against the events; wrong sentences are sent back, and after two retries a verified template takes over, so a listener never hears an invented player. A timing planner fits the speech into the gaps so it never talks over a goal. Voices come from **Azure AI Speech** [confirm].
+It works in five steps. A synthetic match streams events. Code turns them into prioritised moments. A describer, a model on **Microsoft Foundry** [confirm], writes each sentence. A verifier lets a sentence state only facts that the code takes from the events (players, teams, score, minute, position) and words from a reviewed list; wrong sentences are sent back, and after two retries a verified template takes over, so a listener never hears an invented player or score. A timing planner fits the speech into the gaps so it never talks over a goal. The page speaks with the listener's own browser voice, and can use **Azure AI Speech** neural voices from pre-generated clips [confirm after T04: no clip exists yet].
 
-Listeners choose detail level, English or Italian, a calm mode, large captions, or plain text for their own screen reader. The output is also a machine-readable cue sheet [confirm: T05].
+Listeners choose detail level, English or Italian, a calm mode, large captions, or plain text for their own screen reader. The output is also a machine-readable, versioned cue sheet with a JSON Schema.
 
 ## Technologies named
 
@@ -20,11 +20,11 @@ Every row must be true on the day of submission and point to real code.
 
 | Technology | Used for | Where in the repository | Status |
 |---|---|---|---|
-| Microsoft Foundry | The describer model | `backend/app/foundry.py` | [confirm] after T02 |
-| Microsoft Agent Framework | Workflow with a retry edge and a fallback | `backend/app/workflow.py` | [confirm] after T03 |
-| Azure AI Speech | Neural voices | `backend/app/tts.py` | [confirm] after T04 |
+| Microsoft Foundry | The describer model; the demo replays its recorded replies | `backend/app/foundry.py`, `replay.py` | run live on 2026-10-20, in three invocations because of a pacing bug (details in `docs/evidence/foundry-run.md`) (`docs/evidence/foundry-run.md`); state plainly that it writes within a verified vocabulary and often repeats the template wording; the replay file is recorded (T11, 26 replies, 30 of 30 windows), so the demo can show model words; say that they are verified again on every request |
+| Microsoft Agent Framework | `FoundryChatClient`; a workflow with a retry edge and a fallback | `backend/app/foundry.py`, `workflow.py` | built and tested (T03); say it orchestrates one model and deterministic code, not autonomous agents |
+| Azure AI Speech | Neural voices, pre-generated once as clips | `backend/app/tts.py`, `clips.py`, `clips_build.py` | **not used yet**: never called, no clip exists. Name it only after G3 of `docs/DEPLOY.md` is done and the clips are committed |
 | Azure Container Apps | Public demo | `Dockerfile`, `docs/DEPLOY.md` | [confirm] after T06 |
-| GitHub Actions | Tests and image build | `.github/workflows/ci.yml` | in the repository; green after the first push |
+| GitHub Actions | Tests, SDK tests, image build and smoke | `.github/workflows/ci.yml` | in the repository; green after the first push |
 | MCP | Match tools for the agent | `backend/app/mcp_server.py` | [confirm] only if T08 is done |
 
 ## What problem it solves, for whom
@@ -35,3 +35,4 @@ Blind and low-vision football fans, who today get either nothing or a commentato
 
 - No blind or low-vision listener has tested it yet; the style follows public guidance.
 - The match is synthetic, as the rules require.
+- The verifier checks where facts and words come from, not the meaning of the sentence; its closed vocabulary rejects most free wording, and the template speaks instead.

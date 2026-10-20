@@ -1,0 +1,9 @@
+# Optional: the Microsoft Foundry describer (SOUNDPITCH_LLM=foundry, SPEC §11, D10).
+# Not needed for the offline modes, the tests or the end-to-end suite. Tested on Python 3.13 beside the core pins.
+-r requirements.txt
+agent-framework-foundry==1.14.1
+agent-framework-core==1.22.0
+agent-framework-openai==1.17.0
+azure-ai-projects==2.7.0
+azure-identity==1.26.0
+openai==3.35.1

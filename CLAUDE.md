@@ -56,7 +56,17 @@ npm run e2e
 cd backend; .\.venv\Scripts\python.exe -m app.evaluate --seeds 20 --write ..\docs\evaluation.md; cd ..
 ```
 
+The tests that need the optional Agent Framework packages (`test_workflow.py`, `test_foundry_sdk.py`) are skipped in that environment. Run them in a Python 3.13 environment that also has `backend/requirements-agents.txt` (a throw-away venv is fine); CI has an `sdk` job for it.
+
 A task is done when every command above exits 0 and the output is read, not assumed.
+
+## Approval gates
+
+Ask the owner before anything that spends money or is hard to undo: a live model call or evaluation run (`foundry_run`, replay recording), creating or changing Azure resources, a Speech resource, a deployment, a commit, a history rewrite, a push, changing a repository's visibility. Regression tests never use a real model: they use a fake client.
+
+## Session hygiene
+
+One ticket per session; `/clear` between tickets. When compacting, keep the list of modified files, the active ticket and the verification commands above. Read a file again before editing it if it may have changed.
 
 ## Run
 
@@ -66,4 +76,4 @@ Preview servers come from `.claude/launch.json`: `soundpitch` (port 8000, `SOUND
 cd backend; .\.venv\Scripts\python.exe -m uvicorn app.main:app --port 8000
 ```
 
-Open <http://localhost:8000>. `SOUNDPITCH_LLM` selects the describer: `scripted` (default, offline), `bad_then_good`, `always_bad` (test scenarios), `foundry` (ticket T02).
+Open <http://localhost:8000>. `SOUNDPITCH_LLM` selects the describer: `scripted` (default, offline), `bad_then_good`, `always_bad` (test scenarios), `replay` (recorded Foundry replies, what the judges' image runs), `foundry` (a live model, behind the cost ledger). `SOUNDPITCH_ORCHESTRATOR=workflow` runs the pipeline as an Agent Framework graph. `python -m app.smoke <url>` checks a running server.
