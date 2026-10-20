@@ -47,6 +47,12 @@ async function init() {
   }
 }
 
+// The controls are English, the commentary is in the chosen language: mark it so a screen reader
+// switches voice (WCAG 3.1.2). The page language stays that of the controls.
+function markLanguage(lang) {
+  for (const id of ["transcript", "captions", "live-region"]) $(id).setAttribute("lang", lang);
+}
+
 async function loadSession() {
   const token = ++loadToken;
   stop();
@@ -60,6 +66,7 @@ async function loadSession() {
   }
   if (token !== loadToken) return; // a newer request replaced this one
   state.session = session;
+  markLanguage(session.lang);
   state.clock = 0;
   state.cue = 0;
   state.ear = 0;
@@ -245,11 +252,14 @@ function show(cue) {
   const preset = state.presets.find((p) => p.id === state.session.preset);
   const time = document.createElement("span");
   time.className = "time";
+  time.lang = "en"; // interface words (the clock, the badge) are not part of the commentary
   time.textContent = clockText(preset.from_s + cue.start_ms / 1000);
   const text = document.createElement("span");
+  text.lang = state.session.lang;
   text.textContent = cue.text;
   const badge = document.createElement("span");
   badge.className = `badge${cue.status === "fallback" ? " fallback" : ""}`;
+  badge.lang = "en";
   badge.textContent = cue.status === "verified" ? "checked" : "template";
   item.append(time, text, badge);
   $("transcript").append(item);

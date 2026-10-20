@@ -86,6 +86,27 @@ test("Italian commentary", async ({ page }) => {
   await expect(page.getByTestId("transcript")).not.toContainText("Goal!");
 });
 
+test("S23: the commentary is marked with its own language, so a screen reader uses the right voice", async ({ page }) => {
+  await ready(page);
+  const lang = (testId: string) => page.getByTestId(testId).getAttribute("lang");
+  expect(await lang("transcript")).toBe("en");
+  await page.getByTestId("lang").selectOption("it");
+  await expect(page.getByTestId("status")).toContainText("Ready");
+  expect(await lang("transcript")).toBe("it");
+  expect(await lang("captions")).toBe("it");
+  expect(await lang("live-region")).toBe("it");
+  await expect(page.locator("html")).toHaveAttribute("lang", "en"); // the controls stay English
+  await expect(page.getByTestId("lang").locator('option[value="it"]')).toHaveAttribute("lang", "it");
+  await playToEnd(page);
+  await expect(page.getByTestId("transcript-cue-1").locator('span[lang="it"]')).toHaveCount(1); // the cue text
+  await expect(page.getByTestId("transcript-cue-1").locator(".badge")).toHaveAttribute("lang", "en"); // interface words stay English
+  await expect(page.getByTestId("transcript-cue-1").locator(".time")).toHaveAttribute("lang", "en");
+  await page.getByTestId("lang").selectOption("en");
+  await expect(page.getByTestId("status")).toContainText("Ready");
+  expect(await lang("transcript")).toBe("en");
+  expect(await lang("captions")).toBe("en");
+});
+
 test("changing the detail level changes how much is described", async ({ page }) => {
   await ready(page);
   const count = async () => page.locator('[data-testid^="timeline-cue-"]').count();
@@ -95,6 +116,23 @@ test("changing the detail level changes how much is described", async ({ page })
   await page.getByTestId("detail").selectOption("full");
   await expect(page.getByTestId("status")).toContainText("Ready");
   expect(await count()).toBeGreaterThan(essential);
+});
+
+test("S25: the page works under its content security policy", async ({ page }) => {
+  const problems: string[] = [];
+  page.on("console", (message) => {
+    if (/content security policy|refused to/i.test(message.text())) problems.push(message.text());
+  });
+  page.on("pageerror", (error) => problems.push(error.message));
+  await ready(page);
+  const response = await page.request.get("/");
+  expect(response.headers()["content-security-policy"]).toContain("default-src 'self'");
+  await page.getByTestId("lang").selectOption("it");
+  await expect(page.getByTestId("status")).toContainText("Ready");
+  await page.getByTestId("output").selectOption("screenreader");
+  await expect(page.getByTestId("status")).toContainText("Ready");
+  await playToEnd(page);
+  expect(problems).toEqual([]);
 });
 
 test("S9: no accessibility violations before and after playing", async ({ page }) => {
