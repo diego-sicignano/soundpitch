@@ -3,6 +3,7 @@ name: ci
 on:
   push:
   pull_request:
+  workflow_dispatch:  # the only way to publish an image: Actions tab, Run workflow, on main
 
 jobs:
   backend:
@@ -62,3 +63,25 @@ jobs:
           for i in $(seq 1 12); do test "$(docker inspect -f '{{.State.Health.Status}}' soundpitch)" = "healthy" && exit 0; sleep 5; done
           docker logs soundpitch
           exit 1
+
+  # Publishes the tested commit as an image on ghcr.io, tagged with the commit SHA (never `latest`). A push or a pull
+  # request never publishes: it runs only when someone starts this workflow by hand on main, after every other job,
+  # with the built-in token. CI holds no Azure identity and no other secret.
+  # A new package is private; making it public is a manual step (docs/DEPLOY.md).
+  publish:
+    needs: [backend, sdk, e2e, docker]
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/soundpitch:${GITHUB_SHA}"
+          echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          docker build -t "$image" .
+          docker push "$image"
+          echo "published $image"

@@ -8,6 +8,11 @@
 # identity and a persistent file, none of which the judges' path uses (docs/DEPLOY.md).
 FROM python:3.13-slim
 
+# Links the package on ghcr.io to the repository, so it inherits the repository's visibility settings page.
+LABEL org.opencontainers.image.source="https://github.com/diego-sicignano/soundpitch" \
+      org.opencontainers.image.description="SoundPitch judges' image: replay mode, no key and no network needed" \
+      org.opencontainers.image.licenses="MIT"
+
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
