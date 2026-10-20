@@ -264,6 +264,13 @@ class TtsRequest(Contract):
     rate: float = Field(default=1.0, ge=0.5, le=2.0)
 
 
+class VoiceSupport(Contract):
+    """What the Azure voice can do on this server (SPEC §8, S29): stored clips per language, and whether Speech is configured."""
+
+    stored_clips: dict[Lang, int]
+    live: bool
+
+
 class ErrorResponse(Contract):
     code: Literal[
         "preset_not_found",

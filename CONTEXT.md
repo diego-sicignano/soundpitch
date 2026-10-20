@@ -51,6 +51,6 @@ Glossary and the map of the data contracts. Behaviour is in [`SPEC.md`](SPEC.md)
 | Description | `FactRef`, `Description` |
 | Listener | `Profile`, `Preset` |
 | Plan | `Cue`, `Earcon`, `Dropped`, `BallPoint`, `TraceStep`, `PriorityStats`, `Report`, `Session` |
-| HTTP | `TtsRequest`, `ErrorResponse` |
+| HTTP | `TtsRequest`, `VoiceSupport`, `ErrorResponse` |
 
 Every model rejects unknown fields and is frozen. `CueSheet`, `CueSheetDescription`, `CueSheetCaption` and `CueSheetBallSound` are the cue sheet (HTTP group). Coming with the tickets: `Profile.focus` and `Profile.focus_team` (T09).
