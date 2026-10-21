@@ -145,6 +145,11 @@ test("S25: the page works under its content security policy", async ({ page }) =
   await ready(page);
   const response = await page.request.get("/");
   expect(response.headers()["content-security-policy"]).toContain("default-src 'self'");
+  // The policy blocks inline event handlers, so the markup must carry none (a submit would then reload the page).
+  const inlineHandlers = await page.evaluate(() =>
+    [...document.querySelectorAll("*")].flatMap((e) => [...e.attributes].filter((a) => /^on/i.test(a.name)).map((a) => `${e.tagName}.${a.name}`)),
+  );
+  expect(inlineHandlers).toEqual([]);
   await page.getByTestId("lang").selectOption("it");
   await expect(page.getByTestId("status")).toContainText("Ready");
   await page.getByTestId("output").selectOption("screenreader");

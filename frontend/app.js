@@ -395,6 +395,8 @@ document.addEventListener("keydown", (event) => {
   event.preventDefault();
   $("play").click();
 });
+// An inline onsubmit is blocked by the page's content security policy, so Enter in a field would reload the page.
+$("settings").addEventListener("submit", (event) => event.preventDefault());
 for (const id of ["preset", "detail", "lang", "toggle-earcons", "toggle-calm"]) {
   $(id).addEventListener("change", loadSession);
 }
