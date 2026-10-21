@@ -3,6 +3,7 @@
 import itertools
 import os
 
+from app import stakes
 from app.contracts import Description, Match, Moment, Preset, Profile, Report, Session, TraceStep
 from app.describer import Context, Describer, FlawedDescriber, TemplateDescriber
 from app.moments import detect_moments
@@ -33,8 +34,22 @@ def build_presets(match: Match) -> list[Preset]:
     return presets
 
 
-def describer_from_env() -> Describer:
+LLM_MODES = ("scripted", "bad_then_good", "always_bad", "replay", "foundry")
+
+
+def llm_mode() -> str:
+    """The SOUNDPITCH_LLM setting, checked. A mistyped value is a configuration error that names the setting and the
+    modes, and never echoes the value: whatever was typed there is not ours to print."""
     mode = os.environ.get("SOUNDPITCH_LLM") or "scripted"
+    if mode not in LLM_MODES:
+        from app.foundry import FoundryNotConfigured  # the API answers it as 503 llm_not_configured
+
+        raise FoundryNotConfigured(f"SOUNDPITCH_LLM is not a supported mode (use {', '.join(LLM_MODES)})")
+    return mode
+
+
+def describer_from_env() -> Describer:
+    mode = llm_mode()
     if mode == "scripted":
         return TemplateDescriber()
     if mode == "bad_then_good":
@@ -46,11 +61,10 @@ def describer_from_env() -> Describer:
         from app.replay import shared_replay
 
         return shared_replay()
-    if mode == "foundry":
-        from app.foundry import shared_describer  # the SDK is only touched when this mode is chosen
+    # the only mode left is "foundry"; the SDK is only touched when it is chosen
+    from app.foundry import shared_describer
 
-        return shared_describer()
-    raise ValueError(f"unknown SOUNDPITCH_LLM: {mode}")
+    return shared_describer()
 
 
 def _snapshot(description: object) -> Description | None:
@@ -179,7 +193,24 @@ def verified_descriptions(
     ctx = Context(match, profile.lang)
     moments = detect_moments(window_of(match, preset), profile.detail)
     accepted, _ = _verified(moments, ctx, describer, [])
-    return accepted
+    return apply_context(moments, accepted, ctx)[0]
+
+
+def apply_context(
+    moments: list[Moment], accepted: dict[int, tuple[Description, str]], ctx: Context
+) -> tuple[dict[int, tuple[Description, str]], dict[int, str]]:
+    """Add the code-written context sentence (SPEC §5, Stakes) to the `full` text of the accepted descriptions.
+    It comes after verification: the verified description, its refs and its status are unchanged."""
+    spoken: dict[int, tuple[Description, str]] = {}
+    contexts: dict[int, str] = {}
+    for moment in moments:
+        description, status = accepted[moment.id]
+        found = stakes.context(moment, ctx)
+        if found:
+            contexts[moment.id] = found
+            description = description.model_copy(update={"full": f"{description.full} {found}"})
+        spoken[moment.id] = (description, status)
+    return spoken, contexts
 
 
 def window_of(match: Match, preset: Preset) -> list:
@@ -203,8 +234,10 @@ def assemble_session(
     start_home, start_away = (before[-1].home_score, before[-1].away_score) if before else (0, 0)
     rate = min(profile.rate, CALM_RATE) if profile.calm else profile.rate
 
+    spoken, contexts = apply_context(moments, accepted, ctx)
     candidates = [
-        Candidate(m, accepted[m.id][0], accepted[m.id][1], pan_of(ctx.by_id[m.event_ids[-1]])) for m in moments
+        Candidate(m, spoken[m.id][0], spoken[m.id][1], pan_of(ctx.by_id[m.event_ids[-1]]), contexts.get(m.id))
+        for m in moments
     ]
     cues, dropped = plan(candidates, preset.from_s, rate)
     trace.append(

@@ -307,6 +307,22 @@ input[type="range"] {
   color: var(--warn);
 }
 
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  justify-content: flex-end;
+}
+
+.badge.context-badge {
+  border-color: var(--line);
+  color: inherit;
+}
+
+.context {
+  font-style: italic;
+}
+
 .report {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));

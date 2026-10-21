@@ -170,7 +170,7 @@ class Verifier:
         involved = ctx.involved(moment)
         text = f"{description.full} {description.short}"
         for name in ctx.all_names:
-            if name not in involved and re.search(rf"\b{name}\b", text):
+            if name not in involved and re.search(rf"\b{re.escape(name)}\b", text):
                 issues.append(f"{name} is not in this moment")
 
         last = ctx.by_id[moment.event_ids[-1]]

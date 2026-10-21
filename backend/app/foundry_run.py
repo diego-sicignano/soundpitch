@@ -145,7 +145,8 @@ def run(client: LlmClient, ledger: UsageLedger, pause_s: float = 0.0) -> dict:
                 for cue in session.cues:
                     if cue.status == "verified":
                         s["cues_verified"] += 1
-                        s["cues_own_words"] += cue.text not in template_texts(moments[cue.moment_id], ctx)
+                        said = cue.text.removesuffix(" " + cue.context) if cue.context else cue.text  # the model's part
+                        s["cues_own_words"] += said not in template_texts(moments[cue.moment_id], ctx)
                 s["failed_calls"] += sum(1 for t in session.trace if t.step == "describer" and t.status == "failed")
                 for step in session.trace:
                     if step.step != "verifier":

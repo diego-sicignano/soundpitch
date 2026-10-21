@@ -459,9 +459,9 @@ PARAPHRASES = {
         "free_kick": "Punizione, {team}, batte {p}.",
         "foul": "Un fallo di {p}, {team}.",
         "throw_in": "Rimessa, {team} {side}.",
-        "turnover": "{team} riconquistano il possesso, con {p}.",
-        "buildup": "{team} avanzano {lane_down}: {chain}, {zone}.",
-        "kickoff": "Calcio d'inizio. {team} danno il via, attaccano {dir}.",
+        "turnover": "{team} riconquista il possesso, con {p}.",
+        "buildup": "{team} avanza {lane_down}: {chain}, {zone}.",
+        "kickoff": "Calcio d'inizio. {team} dà il via, attacca {dir}.",
         "halftime": "Fine primo tempo. {score}.",
         "fulltime": "Fine partita. {score}.",
         "score_update": "Minuto {m}. {score}.",
@@ -557,7 +557,7 @@ def test_s19_a_lying_describer_ends_in_the_template_fallback(mode, lang):
         for cue in session.cues:
             if cue.status == "verified":
                 full_ok, short_ok = variants(by_id[cue.moment_id], ctx)
-                assert cue.text in (full_ok if cue.variant == "full" else short_ok), cue
+                assert (cue.text.removesuffix(" " + cue.context) if cue.context else cue.text) in (full_ok if cue.variant == "full" else short_ok), cue
         assert [c.moment_id for c in session.cues if c.priority == 3] == [
             c.moment_id for c in clean.cues if c.priority == 3
         ]
@@ -758,11 +758,11 @@ def test_a_sentence_is_either_verified_as_written_or_replaced_by_the_template(co
             moment = moments[cue.moment_id]
             if cue.status == "verified":
                 assert verifier.check(moment, said[moment.id]) == []
-                assert cue.text in (said[moment.id].full, said[moment.id].short)
+                assert (cue.text.removesuffix(" " + cue.context) if cue.context else cue.text) in (said[moment.id].full, said[moment.id].short)
             else:
                 assert verifier.check(moment, said[moment.id]) != []
                 full_ok, short_ok = variants(moment, ctx)
-                assert cue.text in (full_ok if cue.variant == "full" else short_ok)
+                assert (cue.text.removesuffix(" " + cue.context) if cue.context else cue.text) in (full_ok if cue.variant == "full" else short_ok)
 
 
 # ---- round 2 of the independent review ------------------------------------------------------------

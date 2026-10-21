@@ -150,10 +150,12 @@ def test_webvtt_is_well_formed():
     "mode,attempts", [("scripted", 1), ("bad_then_good", 2), ("always_bad", MAX_ATTEMPTS)]
 )
 def test_the_environment_selects_the_describer(monkeypatch, mode, attempts):
+    from app import foundry
+
     monkeypatch.setenv("SOUNDPITCH_LLM", mode)
     assert session(describer=describer_from_env()).report.attempts == attempts
     monkeypatch.setenv("SOUNDPITCH_LLM", "nope")
-    with pytest.raises(ValueError):
+    with pytest.raises(foundry.FoundryNotConfigured, match="SOUNDPITCH_LLM"):  # a configuration error, not a bug
         describer_from_env()
 
 

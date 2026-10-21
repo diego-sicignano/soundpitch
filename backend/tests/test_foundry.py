@@ -274,7 +274,7 @@ def test_the_adversarial_alterations_of_s19_never_become_verified():
         for cue in s.cues:
             if cue.moment_id in altered and cue.status == "verified":
                 full_ok, short_ok = variants(moments[cue.moment_id], ctx)
-                assert cue.text in (full_ok if cue.variant == "full" else short_ok), (name, cue)
+                assert (cue.text.removesuffix(" " + cue.context) if cue.context else cue.text) in (full_ok if cue.variant == "full" else short_ok), (name, cue)
             checked += cue.moment_id in altered
     assert checked > 50 and verified_somewhere > 0  # unaltered moments do pass: the test is not vacuous
 

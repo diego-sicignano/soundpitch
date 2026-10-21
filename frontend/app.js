@@ -298,12 +298,30 @@ function show(cue) {
   time.textContent = clockText(preset.from_s + cue.start_ms / 1000);
   const text = document.createElement("span");
   text.lang = state.session.lang;
-  text.textContent = cue.text;
+  text.className = "cue-text";
+  const badges = document.createElement("span");
+  badges.className = "badges";
   const badge = document.createElement("span");
   badge.className = `badge${cue.status === "fallback" ? " fallback" : ""}`;
   badge.lang = "en";
   badge.textContent = cue.status === "verified" ? "checked" : "template";
-  item.append(time, text, badge);
+  badges.append(badge);
+  if (cue.context && cue.text.endsWith(cue.context)) {
+    // the closing sentence is written by code from the score, not by the describer: keep it apart (SPEC §5, S31)
+    const context = document.createElement("span");
+    context.className = "context";
+    context.setAttribute("data-testid", `transcript-context-${cue.id}`);
+    context.textContent = cue.context;
+    text.append(cue.text.slice(0, cue.text.length - cue.context.length), context);
+    const note = document.createElement("span");
+    note.className = "badge context-badge";
+    note.lang = "en";
+    note.textContent = "score context";
+    badges.append(note);
+  } else {
+    text.textContent = cue.text;
+  }
+  item.append(time, text, badges);
   $("transcript").append(item);
   const scroller = $("transcript").parentElement;
   scroller.scrollTop = scroller.scrollHeight;
@@ -377,6 +395,8 @@ document.addEventListener("keydown", (event) => {
   event.preventDefault();
   $("play").click();
 });
+// An inline onsubmit is blocked by the page's content security policy, so Enter in a field would reload the page.
+$("settings").addEventListener("submit", (event) => event.preventDefault());
 for (const id of ["preset", "detail", "lang", "toggle-earcons", "toggle-calm"]) {
   $(id).addEventListener("change", loadSession);
 }

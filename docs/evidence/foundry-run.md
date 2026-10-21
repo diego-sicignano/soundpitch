@@ -1,6 +1,8 @@
 # Foundry runs
 
-Two runs of `python -m app.foundry_run` on 2026-10-20 against the deployment `soundpitch-mini` (`gpt-4.1-mini`, version 2025-04-14, Global Standard, capacity 8, read from Azure the same day). Run 2 is the one that produced the replay file `backend/app/replay_data/foundry_replies.json` (T11, D12); run 1 is kept as history.
+> **Since these runs (2026-10-21, D20):** the Italian templates were corrected (singular verbs with a club name, no article before a name). The tables below describe the runs as they were. Replayed today, the recorded Italian sentences that copied the old plural wording fail the verifier at attempt 1 and are replaced by the templates at attempt 2 (14 of 15 Italian sessions); English is unchanged.
+
+Two runs of `python -m app.foundry_run` on 2026-10-20 against the pay-as-you-go deployment `soundpitch-mini` (a deployment of the same name on an Azure for Students subscription served 58 earlier test requests, D23; its replies were not kept and are not in the figures below) (`gpt-4.1-mini`, version 2025-04-14, Global Standard, capacity 8, read from Azure the same day). Run 2 is the one that produced the replay file `backend/app/replay_data/foundry_replies.json` (T11, D12); run 1 is kept as history.
 
 ## Run 2: recorded under the cost ledger (the replay file)
 

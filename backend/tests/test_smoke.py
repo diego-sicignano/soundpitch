@@ -61,6 +61,12 @@ def job(name: str) -> str:
     return rest[: min(following)] if following else rest
 
 
+def test_the_workflow_token_is_read_only_unless_a_job_asks_for_more():
+    ci = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    top = ci.split("\njobs:")[0]  # the part before any job: it applies to all of them
+    assert "\npermissions:\n  contents: read\n" in top.replace("\r\n", "\n")
+
+
 def test_the_image_is_linked_to_the_repository_so_ghcr_can_show_it_public():
     dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
     assert 'LABEL org.opencontainers.image.source="https://github.com/diego-sicignano/soundpitch"' in dockerfile

@@ -1,0 +1,22 @@
+{
+  "name": "SoundPitch",
+  "image": "mcr.microsoft.com/devcontainers/python:1-3.13-bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": { "version": "22" }
+  },
+  // Playwright uses its own Chromium when CI is set (playwright.config.ts); a container has no installed Chrome.
+  "containerEnv": { "CI": "true" },
+  // The same setup as the CI jobs: the backend venv, the npm packages and Playwright's Chromium. The base image
+  // ships a yarn apt source whose signing key has expired, which breaks `apt-get update` inside Playwright's installer.
+  "postCreateCommand": "sudo rm -f /etc/apt/sources.list.d/yarn.list && python -m venv backend/.venv && backend/.venv/bin/python -m pip install -r backend/requirements-dev.txt && npm ci && npx playwright install --with-deps chromium",
+  "forwardPorts": [8000],
+  "portsAttributes": {
+    "8000": { "label": "SoundPitch (uvicorn)", "onAutoForward": "openBrowser" }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-python.python", "charliermarsh.ruff", "ms-playwright.playwright"],
+      "settings": { "python.defaultInterpreterPath": "${containerWorkspaceFolder}/backend/.venv/bin/python" }
+    }
+  }
+}

@@ -27,7 +27,7 @@ The first seven limits stop the call **before** it reaches Azure. The Azure rows
 1. The reply may already be stored (same match, language, moments, issues and instructions): no call, no cost, also after a restart.
 2. Otherwise the describer reserves the **worst case** in one SQLite `BEGIN IMMEDIATE` transaction: estimated prompt tokens + 1,000 output tokens, three SDK attempts, at the USD list price counted 1:1 as euros plus 25% (0.50 per million input tokens, 2.00 per million output). If any limit would be passed, nothing is sent, the log gets one line without secrets (`model call refused before contacting Azure: day limit reached`) and the trace says `llm budget exhausted: templates (day)`; the verified templates speak.
 3. The call is sent. When it returns, the reservation is replaced by the usage the provider reported (`usage_details`); without a report, by an estimate.
-4. A call that raises, times out or is cancelled **keeps its worst case**, because it may have been billed. Only a call that never left the process (the submit failed) is released.
+4. A call that raises, times out or is cancelled **keeps its worst case**, because it may have been billed; a call that timed out is settled with the reported usage if its answer arrives later. Only a call that never left the process (the submit failed) is released.
 5. If the database cannot be opened, read or written, the call is refused (fail closed). No retry loop: the pipeline's retries each have to reserve again and are refused as soon as a limit is reached.
 
 ## Assumptions
@@ -43,12 +43,12 @@ The first seven limits stop the call **before** it reaches Azure. The Azure rows
 |---|---|
 | `tests/test_usage.py` (18) and the S21 tests in `tests/test_foundry.py`, with fakes | pass: 40 threads against a cap of 10 grant exactly 10; 4 processes against a cap of 15 grant exactly 15; a new ledger on the same file continues the count; day and month roll over with the UTC clock; failed, timed-out and cancelled calls keep their worst case and a late answer is settled; reservations in flight count; an unusable database refuses before the client is touched; an unusable ledger, an exhausted day, token or month limit all end in verified templates with the reason in the trace |
 | Race found by those tests and fixed | the first connection of concurrent threads could hit `database is locked` while switching to WAL; the call was refused (fail closed, the cap was never overshot) but it was an availability bug. Initialisation now runs once per file and process, with a retry until the busy timeout; 8 repeated runs are green |
-| Core suite, ruff, e2e (Playwright and axe-core), SDK adapter tests (Python 3.13), evaluation reproducibility | `pytest` 237 passed, 1 skipped (the SDK file); `ruff check` clean; `npm run e2e` 11 passed; SDK tests 11 passed; `docs/evaluation.md` regenerates identical |
+| Core suite, ruff, e2e (Playwright and axe-core), SDK adapter tests (Python 3.13), evaluation reproducibility | At the time of this change (2026-10-20): `pytest` 237 passed, 1 skipped (the SDK file); `ruff check` clean; `npm run e2e` 11 passed; SDK tests 11 passed; `docs/evaluation.md` regenerates identical. These counts are a dated snapshot: the suites have grown since; the commands to rerun them are in the README, "Tests and evaluation" |
 | One live smoke call, through the ledger, with an output allowance of 150 tokens (`kickoff`, essential, English: one moment) | 1 call. The provider reported 686 input and 34 output tokens; the ledger settled the call at 720 tokens and 411 micro-units (0.000411): the list price 686 x 0.40 + 34 x 1.60 per million = USD 0.0003288, times 1.25, counted 1:1 as euros) from a reserved worst case several times larger; the moment verified. A second process read the same totals from the file |
 | Azure deployment, read-only first | one deployment `soundpitch-mini`, capacity 10, no provisioned throughput, budget 5 EUR with spend 0 |
 | Azure deployment, one change | capacity 10 to 8, in place, same model, version and SKU. Reason: the application allows 2 calls a minute and the service counts each at about 3,200 tokens (prompt plus the 1,000 `max_tokens`), so about 6,400 a minute are needed; 8,000 leaves a margin and lowers the burst possible with the credential. Reversible with the same command and `--sku-capacity 10` |
 
-No further live evaluation was run. `docs/evidence/foundry-run.md` predates the ledger.
+No further live evaluation was run for this table. The first run in `docs/evidence/foundry-run.md` predates the ledger; its second run (the one that produced the replay file) was made under it, with limits raised for that run only.
 
 ## What is not covered
 

@@ -6,11 +6,11 @@ Audio-first match companion for blind and low-vision fans, built for the Microso
 
 The spec is the authority; code follows it.
 
-- [`SPEC.md`](SPEC.md): behaviour, pinned numbers, UI test ids, acceptance rows `S1` to `S18`.
+- [`SPEC.md`](SPEC.md): behaviour, pinned numbers, UI test ids, acceptance rows `S1` to `S32`.
 - [`CONTEXT.md`](CONTEXT.md): glossary and the map of the contracts. `backend/app/contracts.py` is the single source of the field-level contracts.
-- [`ROADMAP.md`](ROADMAP.md) and [`docs/tickets/`](docs/tickets/): the work items `T01` to `T10`, each citing the acceptance rows it satisfies.
+- [`ROADMAP.md`](ROADMAP.md) and [`docs/tickets/`](docs/tickets/): the work items `T01` to `T11`, each citing the acceptance rows it satisfies.
 - [`docs/DECISIONS.md`](docs/DECISIONS.md): why things are the way they are.
-- [`docs/hackathon/`](docs/hackathon/): the official rules (verbatim), our summary and the submission checklist. When a choice depends on a rule, cite the section.
+- [`docs/hackathon/`](docs/hackathon/): our summary of the official rules (the verbatim text is in the owner's git-ignored `docs/hackathon/_local/` and at the source named in its README), the compliance record and the submission checklist. When a choice depends on a rule, cite the section.
 
 Rules:
 
