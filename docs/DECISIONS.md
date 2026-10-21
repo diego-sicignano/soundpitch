@@ -210,3 +210,11 @@ The Italian context sentences use singular verbs with a club name ("Northgate pa
 **Not done.** The cost gate G6 (Cost Management data arrives after 8 to 48 hours), a browser run of the page against the public address, any Speech clip, the demo video, the submission form.
 
 **Alternatives.** Making the workflow push-triggered again by a new commit (it did not start one either). A private package with a registry credential on the app (a secret to hold for no benefit). Azure Container Registry (a second paid service). A prebuilt Playwright image for the dev container (larger, and it would not match the CI setup).
+
+## D25. The hosted demo is taken down until the video and the submission are to be made (2026-10-21)
+
+**Why.** The owner asked to stop Azure costs and to continue from another computer. The resource group held only the demo (the container app and its environment) and nothing depended on it: the image is public on GHCR and the settings are in `docs/DEPLOY.md`.
+
+**Choice.** The resource group `rg-soundpitch-demo` was deleted after its contents were listed; the documents say that no hosted demo exists now, keep the verified record and add "Teardown and redeploy" with the commands. The rules (4.8) need a public demo until 10 Nov 2026, 23:59 Pacific, so the checklist reopens that item: **redeploy before the video and the submission.** Deleting stops further hosting charges; it does not erase what accrued, and the cost gate G6 for that group was never read (the data arrives 8 to 48 hours after creation).
+
+**Alternatives.** Leaving it up (scale to zero keeps the expected cost near zero, but the owner chose certainty). Deleting only the app and keeping the environment (the environment is the item with the unclear `Environment` meters, D17).

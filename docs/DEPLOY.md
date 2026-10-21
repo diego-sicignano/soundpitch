@@ -1,6 +1,6 @@
 # Deploying SoundPitch
 
-State on 2026-10-21: **deployed.** The public demo is <https://soundpitch.delightfulbay-5202fc67.italynorth.azurecontainerapps.io> (Azure Container Apps, Consumption only, Italy North, the pay-as-you-go subscription), running the GHCR image of the commit `09db91c`, verified end to end the same day (below, "Deployment record"). No Speech request has been sent and no voice clip exists. The commands in this guide that are marked *not run* are still a plan; those under "Deployment record" were run. Hosting resources and the voice clips cost money; the gates below say what needed approval. The decision behind this plan is D17 in [`DECISIONS.md`](DECISIONS.md); the ticket is [`tickets/T06-deploy.md`](tickets/T06-deploy.md).
+State on 2026-10-21 (end of day): **not deployed.** The demo was deployed and verified that day (below, "Deployment record") and its resource group was deleted afterwards to stop costs, so <https://soundpitch.delightfulbay-5202fc67.italynorth.azurecontainerapps.io> no longer answers. The image of `09db91c` is still public on GHCR and "Teardown and redeploy" below brings the demo back. No Speech request has been sent and no voice clip exists. The commands marked *not run* are still a plan. Hosting resources and the voice clips cost money; the gates say what needs approval. The decision behind this plan is D17 in [`DECISIONS.md`](DECISIONS.md); the ticket is [`tickets/T06-deploy.md`](tickets/T06-deploy.md).
 
 ## What is deployed, and what is not
 
@@ -158,6 +158,27 @@ az group delete --name rg-soundpitch-demo --yes
 
 **Cost gate.** G6 step 1 done: the environment has no workload profile (`workloadProfiles: null`, no Dedicated or Flexible plan), no private endpoint and no maintenance window. Steps 2 to 4 (Cost Management after 8 to 48 hours, any `Environment` meter above 0 means delete the environment and use the fallback, and once more before 10 Nov) are **pending**.
 
+## Teardown (2026-10-21) and redeploy
+
+**Teardown.** To stop Azure costs the resource group `rg-soundpitch-demo` was deleted (`az group delete --name rg-soundpitch-demo --yes`) after listing it: it held only the container app `soundpitch` and the environment `cae-soundpitch`, in Italy North, on the pay-as-you-go subscription. Deleting stops hosting charges from then on; it does not erase what had accrued, and the cost gate G6 can no longer be read for that group (Cost Management may still show the first hours). The resource provider registration `Microsoft.App` remains on the subscription (free). The GHCR image stays.
+
+**Redeploy** (about 10 minutes; the same settings as the record above; needs `az login` on the pay-as-you-go subscription, not Azure for Students). Rules 4.8 need the demo public until 10 Nov 2026, 23:59 Pacific, so do this before the video and the submission, and delete the group again after 10 Nov.
+
+```powershell
+az login
+az account show --query "{name:name}"            # must be the pay-as-you-go subscription
+az extension add --name containerapp --upgrade    # once per computer
+az provider register --namespace Microsoft.App --wait
+$image = "ghcr.io/diego-sicignano/soundpitch:09db91c21a048312e1855c45f3629e07d7b6e54d"   # or a newer tested commit's tag
+az group create --name rg-soundpitch-demo --location italynorth
+az containerapp env create --name cae-soundpitch --resource-group rg-soundpitch-demo --location italynorth --enable-workload-profiles false --logs-destination none
+az containerapp create --name soundpitch --resource-group rg-soundpitch-demo --environment cae-soundpitch --image $image --ingress external --target-port 8000 --min-replicas 0 --max-replicas 1 --cpu 0.25 --memory 0.5Gi --env-vars SOUNDPITCH_LLM=replay SOUNDPITCH_TRUST_PROXY=1
+az containerapp show --name soundpitch --resource-group rg-soundpitch-demo --query "properties.configuration.ingress.fqdn" -o tsv
+cd backend; .\.venv\Scripts\python.exe -m app.smoke https://<fqdn>; cd ..
+```
+
+A new address is generated each time: put it in the README, `docs/submission/PITCH.md` and the video. To publish a newer image, start the CI workflow by hand on `main` (Actions, "ci", Run workflow: push-triggered runs did not start, see the record), which tests and then publishes the image tagged with the commit.
+
 ## Fallbacks
 
 - **Render Free (USD 0, not on Azure).** A web service from the same image (`ghcr.io/diego-sicignano/soundpitch:<sha>`) or from the repository's `Dockerfile`, no environment variable but `SOUNDPITCH_LLM=replay`, and `SOUNDPITCH_TRUST_PROXY=1` only after reading how Render writes `X-Forwarded-For`. Limits to accept: 0.1 CPU and 512 MB, spin-down after 15 minutes without traffic and about a minute to wake, 750 free hours a month, and a bandwidth cap that suspends all free services if exceeded. Not confirmed: that the Free type takes an image-backed service and that a public ghcr.io image pulls without credentials (a deploy from the repository is the alternative). It would not count as Azure hosting for criterion 3.
@@ -169,7 +190,7 @@ az group delete --name rg-soundpitch-demo --yes
 |---|---|---|
 | Foundry deployment `soundpitch-mini` (`gpt-4.1-mini`, Global Standard, capacity 8) | exists, created 2026-10-20; used on that day (a full recording run is about USD 0.03; Azure Cost Management shows EUR 0.05, USD 0.057, for everything on the subscription through 2026-10-21; the earlier test usage on an Azure for Students subscription, and the credit it used, are in `docs/hackathon/COMPLIANCE.md` and D23) | not called by the judges' path; the ledger (D11) limits a live run; Azure's 5 EUR budget only sends e-mail |
 | Speech clips | not generated | about USD 0.11 once, on the existing S0 resource, after approval |
-| Hosting | deployed 2026-10-21 | Container Apps Consumption, scale to zero, one replica at most, inside the monthly grants; cost gate G6; group deleted after judging |
+| Hosting | deployed 2026-10-21, deleted the same day; redeploy before submitting | Container Apps Consumption, scale to zero, one replica at most, inside the monthly grants; cost gate G6; group deleted after judging |
 | Speech at run time | none | the public app holds no key |
 
 Azure's budgets alert, they do not stop spending (Microsoft Learn, "Create and manage budgets": a budget does not affect resources or stop consumption; cost data arrives 8 to 24 hours late). An automatic stop would need an action group calling a function; it was not built.

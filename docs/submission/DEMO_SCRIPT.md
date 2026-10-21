@@ -2,7 +2,7 @@
 
 Rules 4.4: under two minutes, a public URL, the project running on its platform (a browser), no third-party trademarks, no music you lack rights to. Judges need not watch past two minutes, so the best moment goes first. Target: about 110 seconds. Ticket: [T07](../tickets/T07-video-and-pitch.md).
 
-Before recording: use headphones for stereo, open the demo URL in Chrome (<https://soundpitch.delightfulbay-5202fc67.italynorth.azurecontainerapps.io>; wake it with one request first, a cold start takes about 15 s; the video must show the public URL, rules 4.4), set the zoom to 125%, close other tabs, mute notifications. Start a second server with `SOUNDPITCH_LLM=always_bad` for the sabotage scene.
+Before recording: use headphones for stereo, open the demo URL in Chrome (the demo is offline until it is redeployed, `docs/DEPLOY.md`; wake it with one request first, a cold start takes 10 to 17 s; the video must show the public URL, rules 4.4), set the zoom to 125%, close other tabs, mute notifications. Start a second server with `SOUNDPITCH_LLM=always_bad` for the sabotage scene.
 
 | Time | On screen | Voice-over (English) |
 |---|---|---|
@@ -12,7 +12,7 @@ Before recording: use headphones for stereo, open the demo URL in Chrome (<https
 | 0:55 to 1:10 | Point to the timeline: speech blocks, gaps, the yellow must-say block. | "Speech is planned into the gaps. A goal is never pushed out by routine play." |
 | 1:10 to 1:35 | Second page on the `always_bad` server. Open the report: "Template fallback", attempts 3. Open "Pipeline steps". Transcript badges say "template". | "Every name, team and score in a described sentence is checked against the match events before it is spoken; the score summary after a goal is computed by code. Here a deliberately faulty test describer keeps naming the wrong player. The verifier rejects it three times and a verified template takes over. The listener never hears a wrong name." |
 | 1:35 to 1:48 | Switch to Italian, then calm mode, then "My own screen reader". | "Italian or English, a calm mode, large captions, or plain text for your own screen reader." |
-| 1:48 to 1:55 | Title card with the URL and the technologies. | "Model words recorded from Microsoft Foundry through the Microsoft Agent Framework, checked again by code on every request." On the title card: the demo URL, and "Microsoft Foundry, Microsoft Agent Framework". Say "open source": the repository is public. Add "hosted on Azure Container Apps" (true since 2026-10-21). Add Azure AI Speech only if `docs/DEPLOY.md` G3 is done (it is not). |
+| 1:48 to 1:55 | Title card with the URL and the technologies. | "Model words recorded from Microsoft Foundry through the Microsoft Agent Framework, checked again by code on every request." On the title card: the demo URL, and "Microsoft Foundry, Microsoft Agent Framework". Say "open source": the repository is public. Add "hosted on Azure Container Apps" only while the redeployed demo is up. Add Azure AI Speech only if `docs/DEPLOY.md` G3 is done (it is not). |
 
 Checklist after recording:
 

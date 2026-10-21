@@ -4,19 +4,19 @@
 
 Built for the [Microsoft x Premier League "Inside the Game" hackathon](docs/hackathon/SUMMARY.md). All data is synthetic: the teams (Northgate Red, Harbour Blue) and the players are invented. This project is not affiliated with, endorsed by or sponsored by Microsoft or the Premier League.
 
-> **Status (21 Oct 2026).** Done and tested: the offline pipeline, the player page, the grounded verifier, the Foundry describer, the usage ledger, the replay mode with 26 recorded Foundry replies that cover all 30 demo windows, the guarded voice endpoint, the cue-sheet JSON export, the score-context sentence (S31) and the Agent Framework workflow. **Live:** the public demo at <https://soundpitch.delightfulbay-5202fc67.italynorth.azurecontainerapps.io> (Azure Container Apps, replay mode, verified 2026-10-21). **Not done:** Azure AI Speech has never been called (no voice clip exists, so the demo speaks with the browser's own voice), no blind or low-vision listener has tested it. Plan and deadline: [`ROADMAP.md`](ROADMAP.md).
+> **Status (21 Oct 2026).** Done and tested: the offline pipeline, the player page, the grounded verifier, the Foundry describer, the usage ledger, the replay mode with 26 recorded Foundry replies that cover all 30 demo windows, the guarded voice endpoint, the cue-sheet JSON export, the score-context sentence (S31) and the Agent Framework workflow. **Hosted demo: offline.** It ran on Azure Container Apps on 2026-10-21 and passed acceptance; its Azure resources were then deleted to stop costs. The tested image is still public on GHCR and the redeploy commands are in [`docs/DEPLOY.md`](docs/DEPLOY.md). Rules 4.8 need a public demo until 10 Nov 2026, 23:59 Pacific: **redeploy before submitting.** **Not done:** Azure AI Speech has never been called (no voice clip exists, so the demo speaks with the browser's own voice), no blind or low-vision listener has tested it. Plan and deadline: [`ROADMAP.md`](ROADMAP.md).
 
 ## For judges
 
-**Public demo: <https://soundpitch.delightfulbay-5202fc67.italynorth.azurecontainerapps.io>** (no login, free; the first request after a quiet period can take about 15 seconds while the container starts). It is the judges' image, `SOUNDPITCH_LLM=replay`, and it stays up until the end of judging (10 Nov 2026, 23:59 Pacific). To run it yourself, see "Run it" below. Then, on the demo or on a local copy:
+**There is no hosted demo at the moment.** One ran on Azure Container Apps on 2026-10-21 (replay mode, verified, see [`docs/DEPLOY.md`](docs/DEPLOY.md)) and was deleted the same day to stop costs; it will be redeployed from the public image before the submission. Until then, run it yourself: GitHub Codespaces or a local clone ("Run it" below), or `docker run -p 8000:8000 ghcr.io/diego-sicignano/soundpitch:09db91c21a048312e1855c45f3629e07d7b6e54d`. Then, on a local copy:
 
 1. Open <http://localhost:8000>, choose **Goal 1: Northgate, minute 16**, press **Play** (or the space bar). Use headphones: the ball sound moves with the play. The goal ends with what it means for the score ("The opening goal of the match.").
 2. Open **How it was checked**: how many sentences were verified, how many fell back to a template, the pipeline steps.
 3. Try **Italiano**, **calm mode**, the "My own screen reader" output, and the `detail` levels.
-4. The same session as JSON for a graphics or captioning system: <https://soundpitch.delightfulbay-5202fc67.italynorth.azurecontainerapps.io/api/cuesheet?preset=goal_1> and its [JSON Schema](docs/contracts/cuesheet.v1.schema.json).
+4. The same session as JSON for a graphics or captioning system: <http://localhost:8000/api/cuesheet?preset=goal_1> and its [JSON Schema](docs/contracts/cuesheet.v1.schema.json).
 5. To see the safety net work, start a second server with `SOUNDPITCH_LLM=always_bad`: every model sentence is wrong, the verifier rejects it three times and a verified template speaks.
 
-The public demo runs `SOUNDPITCH_LLM=replay`: words that a Foundry model wrote earlier and the project recorded, checked again by the verifier on every request. It needs no key and makes no model call, so it costs nothing however many judges use it (design: [`docs/DECISIONS.md`](docs/DECISIONS.md) D12).
+The hosted demo (when it is deployed) runs `SOUNDPITCH_LLM=replay`, as the image does by default: words that a Foundry model wrote earlier and the project recorded, checked again by the verifier on every request. It needs no key and makes no model call, so it costs nothing however many judges use it (design: [`docs/DECISIONS.md`](docs/DECISIONS.md) D12).
 
 ## What it does
 
@@ -70,7 +70,7 @@ Only code decides **what is true** and **when it is said**; a model only chooses
 | Microsoft Foundry (`gpt-4.1-mini`, Global Standard) | `foundry.py` writes the words; evidence in [`docs/evidence/foundry-run.md`](docs/evidence/foundry-run.md) | run live twice on 20 Oct 2026; the second run is recorded in the replay file (26 replies, about 0.03 USD); it mostly repeats the template wording |
 | Microsoft Agent Framework | `FoundryChatClient` in `foundry.py`; the workflow graph in `workflow.py` (optional packages) | built and tested; it orchestrates, the model is not an autonomous agent |
 | Azure AI Speech | `tts.py` | written, tested against a stub, **not run with a real key** |
-| Azure Container Apps | `Dockerfile`, [`docs/DEPLOY.md`](docs/DEPLOY.md) | **deployed 2026-10-21**: Consumption only, scale to zero, one replica at most, 0.25 vCPU and 0.5 GiB, the public image of the commit `09db91c`; no secret, no key, no model call |
+| Azure Container Apps | `Dockerfile`, [`docs/DEPLOY.md`](docs/DEPLOY.md) | deployed and verified 2026-10-21 (Consumption only, scale to zero, one replica at most, 0.25 vCPU and 0.5 GiB, the public image of the commit `09db91c`, no secret, no key, no model call), then **deleted the same day**; **not hosted now** |
 | GitHub Actions | `.github/workflows/ci.yml` | backend, SDK, end-to-end and Docker jobs green on `09db91c` ([run](https://github.com/diego-sicignano/soundpitch/actions/runs/39622166407)); started by hand (`workflow_dispatch`) because push-triggered runs did not start, see `docs/DEPLOY.md`; the same run published the image to GHCR |
 
 ## Run it

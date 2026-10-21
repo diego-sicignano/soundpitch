@@ -1,6 +1,6 @@
 # T06. Deploy to Azure Container Apps
 
-**Status: done 2026-10-21.** Deployed on Azure Container Apps (Consumption only, Italy North, scale to zero, one replica at most, 0.25 vCPU, 0.5 GiB) from the public GHCR image of the commit `09db91c`; acceptance on the public address passed (`docs/DEPLOY.md`, "Deployment record"): <https://soundpitch.delightfulbay-5202fc67.italynorth.azurecontainerapps.io>. Left: the cost gate G6 (Cost Management 8 to 48 hours after creation, and once more before 10 Nov) and keeping the service up until 10 Nov 2026, 23:59 Pacific. The offline preparation that preceded it follows.
+**Status: deployed and verified 2026-10-21, then deleted the same day to stop costs; redeploy before submitting.** It ran on Azure Container Apps (Consumption only, Italy North, scale to zero, one replica at most, 0.25 vCPU, 0.5 GiB) from the public GHCR image of the commit `09db91c` and passed acceptance (`docs/DEPLOY.md`, "Deployment record"). Its resource group was deleted afterwards ("Teardown and redeploy"), so there is no demo URL now. Left: redeploy, the cost gate G6 on the new group, and keeping the service up until 10 Nov 2026, 23:59 Pacific. The offline preparation that preceded it follows.
 
 **Depends on:** T11 (so the demo shows recorded model words), T04 optional  **Acceptance:** S16  **Spec:** §15  **Rules:** 4.8 (free access for judges until 10 Nov, 23:59 Pacific)  **Judging:** criterion 3, Best Azure Cloud Native Integration
 
