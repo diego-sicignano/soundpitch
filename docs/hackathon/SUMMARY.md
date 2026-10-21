@@ -22,7 +22,7 @@ All times in the rules are **Pacific Time**. The Italian times are our conversio
 
 - Individuals of legal age, **teams of up to four**, or organisations. One representative submits for a team. A person can be in several teams.
 - Not open to residents of countries where US or local law prohibits it (the rules list Brazil, Quebec, Russia, Crimea, Cuba, Iran, North Korea, Sudan, Syria and OFAC-designated countries), to Microsoft and Premier League staff, judges and their employers, or anyone with a conflict of interest.
-- 4.12: the project must not have had financial or preferential support from Microsoft (funding, contract work, a commercial licence) before the submission period ends.
+- 4.12: the project must not have had financial or preferential support from Microsoft (funding, contract work, a commercial licence) before the submission period ends. Our own position on one Azure for Students credit used in testing is in `COMPLIANCE.md` and D23.
 
 ## The challenge (4.1)
 

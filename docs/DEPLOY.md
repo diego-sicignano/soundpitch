@@ -151,7 +151,7 @@ az group delete --name rg-soundpitch-demo --yes
 
 | Item | State | Control |
 |---|---|---|
-| Foundry deployment `soundpitch-mini` (`gpt-4.1-mini`, Global Standard, capacity 8) | exists, created 2026-10-20; used on that day (a full recording run is about USD 0.03; Azure Cost Management shows EUR 0.05, USD 0.057, for everything on the subscription through 2026-10-21; whether any credit applied is only visible on the October invoice, `docs/hackathon/COMPLIANCE.md`) | not called by the judges' path; the ledger (D11) limits a live run; Azure's 5 EUR budget only sends e-mail |
+| Foundry deployment `soundpitch-mini` (`gpt-4.1-mini`, Global Standard, capacity 8) | exists, created 2026-10-20; used on that day (a full recording run is about USD 0.03; Azure Cost Management shows EUR 0.05, USD 0.057, for everything on the subscription through 2026-10-21; the earlier test usage on an Azure for Students subscription, and the credit it used, are in `docs/hackathon/COMPLIANCE.md` and D23) | not called by the judges' path; the ledger (D11) limits a live run; Azure's 5 EUR budget only sends e-mail |
 | Speech clips | not generated | about USD 0.11 once, on the existing S0 resource, after approval |
 | Hosting | none | Container Apps Consumption, scale to zero, one replica at most, inside the monthly grants; cost gate G6; group deleted after judging |
 | Speech at run time | none | the public app holds no key |
