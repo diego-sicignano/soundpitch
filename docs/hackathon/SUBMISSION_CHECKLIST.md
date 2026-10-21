@@ -12,8 +12,8 @@ Deadlines are in [`SUMMARY.md`](SUMMARY.md). Registration closed **20 Oct 2026, 
 - [x] Newly built after 29 Sep 2026 (first commit: 2026-10-19; the owner states no code existed before 29 Sep).
 - [x] Uses only synthetic data. No real match data, names or logos.
 - [x] Explains why a moment matters (S31: a code-written score-context sentence; not checked by the verifier, and said so).
-- [ ] Runs as shown in the video. `pytest`, `ruff check`, `npm run e2e` green on a clean checkout (CI green after the first push).
-- [ ] Names the Microsoft and Azure technologies actually used, in the pitch (see the table in `README.md`).
+- [x] `pytest`, `ruff check`, `npm run e2e` green on a clean checkout: CI on `09db91c` ([run](https://github.com/diego-sicignano/soundpitch/actions/runs/39622166407)); started by hand, push-triggered runs did not start. Still to do: the video must show the same page.
+- [x] Names the Microsoft and Azure technologies actually used, in the pitch (`docs/submission/PITCH.md`, updated 2026-10-21).
 
 ## Hero technologies (judging criterion 1, the tie-breaker)
 
@@ -22,25 +22,25 @@ Deadlines are in [`SUMMARY.md`](SUMMARY.md). Registration closed **20 Oct 2026, 
 - [x] Replay file committed; the owner reviewed the Italian sentences the model wrote, one is kept as recorded and documented.
 - [x] **Microsoft Agent Framework** workflow for describer, verifier, fallback, timing (T03).
 - [ ] **Azure AI Speech** voice tested with a real key (T04, needs a pricing-tier decision).
-- [ ] **Azure Container Apps** hosting (T06, needs approval).
+- [x] **Azure Container Apps** hosting (T06, deployed and verified 2026-10-21: <https://soundpitch.delightfulbay-5202fc67.italynorth.azurecontainerapps.io>).
 - [ ] Optional: **MCP** server exposing the match tools (T08).
 
 ## Public repository
 
 - [x] History prepared (D22, 2026-10-21): author and committer e-mail are the GitHub noreply address in every commit; the Official Rules and playlist copies are in no commit; a backup (bundle, mirror clone, uncommitted files) is kept outside the repository.
-- [ ] Decide, as the owner, whether the submission text says that about USD 0.05 of Azure for Students credit was used in early testing (D23; recommended: yes, one sentence, in the testing notes or the README limits). After the October invoice (expected early November) check that the Students profile settled it and note the result in `COMPLIANCE.md`.
+- [x] Decided (README, "Honest limits": the one-sentence disclosure is public; repeat it on the submission form if it asks about funding or credits). The question was: whether the submission text says that about USD 0.05 of Azure for Students credit was used in early testing (D23; recommended: yes, one sentence, in the testing notes or the README limits). After the October invoice (expected early November) check that the Students profile settled it and note the result in `COMPLIANCE.md`.
 - [x] Scan of the whole history and the tree on 2026-10-21 (D22): no e-mail address other than the noreply one, no key or token pattern, no private notes, no competitor research. Repeat after any later commit.
-- [ ] Repository created on GitHub as **public** (rules: must be public to be considered).
-- [ ] `backend/.env` is not committed (git-ignored).
-- [ ] README has the pitch, screenshots, how to run, the technologies used, and the honest limits.
-- [ ] `LICENSE` present (MIT).
+- [x] Repository created on GitHub as **public**: <https://github.com/diego-sicignano/soundpitch> (2026-10-21).
+- [x] `backend/.env` is not committed (git-ignored; in no revision).
+- [x] README has the pitch, screenshots, how to run, the technologies used, and the honest limits.
+- [x] `LICENSE` present (MIT).
 
 ## Judges' access (4.8)
 
-- [ ] Public URL works without login, free of charge, **until at least 10 Nov 2026, 23:59 Pacific (11 Nov, 08:59 in Italy)**.
+- [x] Public URL works without login, free of charge (<https://soundpitch.delightfulbay-5202fc67.italynorth.azurecontainerapps.io>, verified 2026-10-21). **Keep it up until at least 10 Nov 2026, 23:59 Pacific (11 Nov, 08:59 in Italy)**; the cost check (`docs/DEPLOY.md` G6) is pending.
 - [x] The judges' path makes no model call and has no daily quota (replay mode, D12).
-- [ ] Budget alert on the Azure subscription; a Speech tier chosen on purpose if Speech is enabled.
-- [ ] Testing instructions in the README ("For judges": which preset to press, expected result), with the URL.
+- [x] Budget alert on the Azure subscription (5 EUR, e-mail only). No Speech is enabled.
+- [x] Testing instructions in the README ("For judges": which preset to press, expected result), with the URL.
 - [ ] Fallback if the live demo is down: the video and the README still show everything.
 
 ## Video (4.4)

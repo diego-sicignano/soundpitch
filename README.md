@@ -4,19 +4,19 @@
 
 Built for the [Microsoft x Premier League "Inside the Game" hackathon](docs/hackathon/SUMMARY.md). All data is synthetic: the teams (Northgate Red, Harbour Blue) and the players are invented. This project is not affiliated with, endorsed by or sponsored by Microsoft or the Premier League.
 
-> **Status (21 Oct 2026).** Done and tested: the offline pipeline, the player page, the grounded verifier, the Foundry describer, the usage ledger, the replay mode with 26 recorded Foundry replies that cover all 30 demo windows, the guarded voice endpoint, the cue-sheet JSON export, the score-context sentence (S31) and the Agent Framework workflow. **Not done:** no public deployment yet (so no demo URL), Azure AI Speech has never been called (no voice clip exists, so the demo speaks with the browser's own voice), no blind or low-vision listener has tested it. Plan and deadline: [`ROADMAP.md`](ROADMAP.md).
+> **Status (21 Oct 2026).** Done and tested: the offline pipeline, the player page, the grounded verifier, the Foundry describer, the usage ledger, the replay mode with 26 recorded Foundry replies that cover all 30 demo windows, the guarded voice endpoint, the cue-sheet JSON export, the score-context sentence (S31) and the Agent Framework workflow. **Live:** the public demo at <https://soundpitch.delightfulbay-5202fc67.italynorth.azurecontainerapps.io> (Azure Container Apps, replay mode, verified 2026-10-21). **Not done:** Azure AI Speech has never been called (no voice clip exists, so the demo speaks with the browser's own voice), no blind or low-vision listener has tested it. Plan and deadline: [`ROADMAP.md`](ROADMAP.md).
 
 ## For judges
 
-There is no hosted demo yet; this section is completed when there is (ticket T06). To try it today, run it locally in two minutes (below), then:
+**Public demo: <https://soundpitch.delightfulbay-5202fc67.italynorth.azurecontainerapps.io>** (no login, free; the first request after a quiet period can take about 15 seconds while the container starts). It is the judges' image, `SOUNDPITCH_LLM=replay`, and it stays up until the end of judging (10 Nov 2026, 23:59 Pacific). To run it yourself, see "Run it" below. Then, on the demo or on a local copy:
 
 1. Open <http://localhost:8000>, choose **Goal 1: Northgate, minute 16**, press **Play** (or the space bar). Use headphones: the ball sound moves with the play. The goal ends with what it means for the score ("The opening goal of the match.").
 2. Open **How it was checked**: how many sentences were verified, how many fell back to a template, the pipeline steps.
 3. Try **Italiano**, **calm mode**, the "My own screen reader" output, and the `detail` levels.
-4. The same session as JSON for a graphics or captioning system: <http://localhost:8000/api/cuesheet?preset=goal_1> and its [JSON Schema](docs/contracts/cuesheet.v1.schema.json).
+4. The same session as JSON for a graphics or captioning system: <https://soundpitch.delightfulbay-5202fc67.italynorth.azurecontainerapps.io/api/cuesheet?preset=goal_1> and its [JSON Schema](docs/contracts/cuesheet.v1.schema.json).
 5. To see the safety net work, start a second server with `SOUNDPITCH_LLM=always_bad`: every model sentence is wrong, the verifier rejects it three times and a verified template speaks.
 
-The public demo will run `SOUNDPITCH_LLM=replay`: words that a Foundry model wrote earlier and the project recorded, checked again by the verifier on every request. It needs no key and makes no model call, so it costs nothing however many judges use it (design: [`docs/DECISIONS.md`](docs/DECISIONS.md) D12).
+The public demo runs `SOUNDPITCH_LLM=replay`: words that a Foundry model wrote earlier and the project recorded, checked again by the verifier on every request. It needs no key and makes no model call, so it costs nothing however many judges use it (design: [`docs/DECISIONS.md`](docs/DECISIONS.md) D12).
 
 ## What it does
 
@@ -70,7 +70,8 @@ Only code decides **what is true** and **when it is said**; a model only chooses
 | Microsoft Foundry (`gpt-4.1-mini`, Global Standard) | `foundry.py` writes the words; evidence in [`docs/evidence/foundry-run.md`](docs/evidence/foundry-run.md) | run live twice on 20 Oct 2026; the second run is recorded in the replay file (26 replies, about 0.03 USD); it mostly repeats the template wording |
 | Microsoft Agent Framework | `FoundryChatClient` in `foundry.py`; the workflow graph in `workflow.py` (optional packages) | built and tested; it orchestrates, the model is not an autonomous agent |
 | Azure AI Speech | `tts.py` | written, tested against a stub, **not run with a real key** |
-| Azure Container Apps | `Dockerfile`, [`docs/DEPLOY.md`](docs/DEPLOY.md) | image built and run read-only here; **not deployed** (plan, cost check and rollback in `docs/DEPLOY.md`) |
+| Azure Container Apps | `Dockerfile`, [`docs/DEPLOY.md`](docs/DEPLOY.md) | **deployed 2026-10-21**: Consumption only, scale to zero, one replica at most, 0.25 vCPU and 0.5 GiB, the public image of the commit `09db91c`; no secret, no key, no model call |
+| GitHub Actions | `.github/workflows/ci.yml` | backend, SDK, end-to-end and Docker jobs green on `09db91c` ([run](https://github.com/diego-sicignano/soundpitch/actions/runs/39622166407)); started by hand (`workflow_dispatch`) because push-triggered runs did not start, see `docs/DEPLOY.md`; the same run published the image to GHCR |
 
 ## Run it
 
@@ -83,7 +84,9 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m uvicorn app.main:app --port 8000
 ```
 
-Open <http://localhost:8000>. The same server serves the page and the API, offline. URL options for demos: `?preset=goal_2`, `?speed=10` (run the clock 10 times faster), `?speech=off` (no sound).
+Open <http://localhost:8000>. The same server serves the page and the API, offline.
+
+**In a browser, with no install: GitHub Codespaces.** On the repository page choose Code, Codespaces, Create codespace on main. The dev container (`.devcontainer/devcontainer.json`) builds the Python 3.13 environment, installs the backend and test dependencies and Playwright's Chromium (a few minutes). Then, in its terminal: `cd backend && .venv/bin/python -m uvicorn app.main:app --port 8000` and open the forwarded port 8000. Tests: `cd backend && .venv/bin/python -m pytest -q`, and from the root `npm run e2e`. Verified by building the container locally and running the tests in it; a Codespace itself has not been started. URL options for demos: `?preset=goal_2`, `?speed=10` (run the clock 10 times faster), `?speech=off` (no sound).
 
 Optional, for the Foundry describer and the workflow: `.\.venv\Scripts\python.exe -m pip install -r requirements-agents.txt` (Python 3.13), `az login`, set `FOUNDRY_PROJECT_ENDPOINT` and `FOUNDRY_MODEL`. Settings are environment variables; copy `backend/.env.example` to `backend/.env` (git-ignored) and load it into the shell that starts the server:
 
@@ -134,7 +137,7 @@ docker build -t soundpitch .
 docker run -p 8000:8000 soundpitch
 ```
 
-The image runs `SOUNDPITCH_LLM=replay` as a non-root user and needs no writable path, key or network. It was built and run on Docker here with `--read-only --cap-drop ALL`, with and without network, and passed the smoke check; the `docker` job in `.github/workflows/ci.yml` repeats that on every push. The voice of the public demo is meant to come from stored clips (`backend/app/audio/`, made once with `python -m app.clips_build`; **none exist yet**, so the image speaks with the browser voice until they are made). Deployment: [`docs/DEPLOY.md`](docs/DEPLOY.md).
+The image runs `SOUNDPITCH_LLM=replay` as a non-root user and needs no writable path, key or network. It was built and run on Docker here with `--read-only --cap-drop ALL`, with and without network, and passed the smoke check; the `docker` job in `.github/workflows/ci.yml` repeats that when the workflow runs. The voice of the public demo is meant to come from stored clips (`backend/app/audio/`, made once with `python -m app.clips_build`; **none exist yet**, so the image speaks with the browser voice until they are made). The image of each tested commit is published on GHCR (`docker pull ghcr.io/diego-sicignano/soundpitch:<commit sha>`, public, no login). Deployment: [`docs/DEPLOY.md`](docs/DEPLOY.md).
 
 ## Honest limits
 
@@ -146,6 +149,7 @@ The image runs `SOUNDPITCH_LLM=replay` as a non-root user and needs no writable 
 - Model spending is limited by the application, not by Azure: the 5 EUR budget only sends e-mail, 8 to 24 hours late, and pay-as-you-go has no cutoff. The ledger counts estimates, per host (D11). The judges' path makes no model call.
 - Speech spending is limited only by the pricing tier of the Speech resource; the application's limits live in memory and restart at zero (SPEC §8).
 - The browser voice varies by browser and operating system.
+- Azure credit: about USD 0.05 of the project's early Foundry testing (2026-10-20) was charged against an Azure for Students credit before the work moved to a pay-as-you-go subscription; all recorded replies were made on the paid one. No grant, sponsorship, contract or licence from Microsoft is involved. Details and the open reading of rule 4.12: [`docs/hackathon/COMPLIANCE.md`](docs/hackathon/COMPLIANCE.md), D23.
 
 ## Built with AI assistance
 

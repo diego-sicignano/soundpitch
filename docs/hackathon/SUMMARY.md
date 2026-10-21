@@ -93,7 +93,7 @@ You keep ownership, but you grant Microsoft and the Premier League a worldwide, 
 | Two genuinely different experiences | Blind and low-vision listening, captions for deaf and hard-of-hearing fans, calm mode, three detail levels, two languages. |
 | "Hero technologies" | **Partly met.** Foundry: run live twice on 2026-10-20 (the second run, 26 calls, is the recorded one), replay mode for the demo. Agent Framework: `FoundryChatClient` and a workflow (`workflow.py`). Not yet: Azure AI Speech with a real key (T04), Azure Container Apps hosting (T06), MCP (T08, optional). Criterion 1 is the tie-breaker, so this matters most. |
 | Multi-agent category | The roles (moment detector, describer, verifier, fallback, timing planner) are executors of an Agent Framework workflow with a conditional retry edge. Only the describer touches a model, so this is orchestration of one model and deterministic code, not a team of autonomous agents; say so plainly. |
-| Public repo, public demo until 10 Nov, video under 2 minutes | Not done yet. See [`SUBMISSION_CHECKLIST.md`](SUBMISSION_CHECKLIST.md). |
+| Public repo, public demo until 10 Nov, video under 2 minutes | Repository public and demo deployed (2026-10-21); the video is not done. See [`SUBMISSION_CHECKLIST.md`](SUBMISSION_CHECKLIST.md). |
 | No third-party trademarks in the video | Teams are fictional (Northgate Red, Harbour Blue). Use no Premier League or Microsoft logos in the video without checking permission. |
 
 ## Points to keep in mind

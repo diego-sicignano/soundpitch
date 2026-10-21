@@ -42,12 +42,12 @@ Judging weights five criteria at 20% each and ties go to criterion 1 (technology
 | T03 | [Agent Framework workflow](docs/tickets/T03-agent-framework-workflow.md) | T02b | S13 | **done**; S13 verified on Python 3.13 with the pinned packages |
 | T04 | [Azure AI Speech with a real key](docs/tickets/T04-azure-speech.md) | Azure resource, **owner's approval** | S14 | todo: the client and the clip tool exist and are tested against a stub; no Speech request has ever been sent and no clip exists (`docs/DEPLOY.md`, G3) |
 | T05 | [Cue sheet and JSON Schema](docs/tickets/T05-cue-sheet.md) | none | S15 | **done** |
-| T06 | [Deploy to Azure Container Apps](docs/tickets/T06-deploy.md) | T11, T04 optional, **owner's approval** | S16 | offline preparation done (image built and run read-only, publish job, stored clips, defensive `X-Forwarded-For`); nothing deployed, no clip generated: each external step waits for approval (`docs/DEPLOY.md`) |
+| T06 | [Deploy to Azure Container Apps](docs/tickets/T06-deploy.md) | T11, T04 optional, **owner's approval** | S16 | **done 2026-10-21**: deployed on Container Apps (Consumption, scale to zero, max 1 replica) and verified on the public address; no Speech clips (T04 todo); cost gate G6 (Cost Management after 8 to 48 hours) pending (`docs/DEPLOY.md`) |
 | T11 | [Record the replay file](docs/tickets/T11-record-replay.md) | T02b, prompt frozen, **owner's approval** (model calls) | S24 | **done**: recorded 2026-10-20, 26 replies, 30 of 30 windows, about 0.03 USD; the owner reviewed the Italian wording, one sentence is kept as recorded and documented |
 | T07 | [Demo video and pitch](docs/tickets/T07-video-and-pitch.md) | T11, T06 | checklist | todo |
 | T08 | [MCP server (optional)](docs/tickets/T08-mcp-server.md) | T03 | S17 | todo, optional |
 | T09 | [Player focus (optional)](docs/tickets/T09-player-focus.md) | none | S18 | todo, optional |
-| T10 | [Make the repository public and submit](docs/tickets/T10-publish-and-submit.md) | all shown | checklist | todo |
+| T10 | [Make the repository public and submit](docs/tickets/T10-publish-and-submit.md) | all shown | checklist | in progress: repository public and CI green (2026-10-21); video, form and G6 left |
 
 Status values: `todo`, `in progress`, `done`. Change the row in the same commit that finishes the ticket.
 

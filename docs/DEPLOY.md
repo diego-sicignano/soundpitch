@@ -1,6 +1,6 @@
 # Deploying SoundPitch
 
-State on 2026-10-20: **nothing is deployed, no hosting resource has been created in Azure, no Speech request has been sent and no package has been published.** The commands marked *not run* below are a plan to be checked against the current Azure documentation at the moment of use; the commands marked *run* were run. Creating hosting resources or generating the voice clips costs money and needs the owner's approval at each gate (see "Gates"). The decision behind this plan is D17 in [`DECISIONS.md`](DECISIONS.md); the ticket is [`tickets/T06-deploy.md`](tickets/T06-deploy.md).
+State on 2026-10-21: **deployed.** The public demo is <https://soundpitch.delightfulbay-5202fc67.italynorth.azurecontainerapps.io> (Azure Container Apps, Consumption only, Italy North, the pay-as-you-go subscription), running the GHCR image of the commit `09db91c`, verified end to end the same day (below, "Deployment record"). No Speech request has been sent and no voice clip exists. The commands in this guide that are marked *not run* are still a plan; those under "Deployment record" were run. Hosting resources and the voice clips cost money; the gates below say what needed approval. The decision behind this plan is D17 in [`DECISIONS.md`](DECISIONS.md); the ticket is [`tickets/T06-deploy.md`](tickets/T06-deploy.md).
 
 ## What is deployed, and what is not
 
@@ -65,7 +65,7 @@ cd ..
 
 Then run the tests, listen to a clip of each language, commit `backend/app/audio/` (about 3 MB) and rebuild the image. The page says the voice is synthetic (S28); keep that note. Until the clips exist, the page does not offer the Azure voice at all (S29) and the default browser voice is used, which depends on the voices installed in the judge's browser and system (the page says when there is none for the language, S30): the video and the README must not claim an Azure voice before this step.
 
-## Publishing the image (G2: needs the repository to exist; *not run*)
+## Publishing the image (G2: done 2026-10-21)
 
 The workflow job `publish` in `.github/workflows/ci.yml` **never runs on a push or a pull request**: ordinary CI (backend, sdk, e2e, docker) runs on both, and `publish` runs only when the owner starts the workflow by hand (Actions tab, "Run workflow", branch `main`), after those four jobs pass, with the built-in `GITHUB_TOKEN` (`packages: write`, nothing else, no Azure identity). So the first push of the repository publishes nothing. The whole workflow also runs with a read-only token (`permissions: contents: read` at the top, a test checks it); only `publish` adds `packages: write`. A manual run pushes `ghcr.io/diego-sicignano/soundpitch:<commit sha>`; there is no `latest` tag. The `Dockerfile` label `org.opencontainers.image.source` links the package to the repository; the repository address in it is the **planned** one (`diego-sicignano/soundpitch`); the repository does not exist yet, and the label, the image names in this file and the workflow's owner (taken from the repository at run time) must be corrected if it is created under another name.
 
@@ -77,7 +77,7 @@ docker logout ghcr.io
 docker pull ghcr.io/diego-sicignano/soundpitch:<sha>
 ```
 
-## Hosting on Azure Container Apps, Consumption only (G4 to G6: needs approval; *not run*)
+## Hosting on Azure Container Apps, Consumption only (G4 and G5 done 2026-10-21, G6 pending)
 
 The cheapest form of the service, for the judging window only: its own resource group, a Consumption-only (legacy) environment with no logging destination, one container app that scales to zero and runs at most one replica.
 
@@ -120,7 +120,7 @@ cd backend; .\.venv\Scripts\python.exe -m app.smoke https://<fqdn>; cd ..
 
 It must exit 0. Also check by hand: `/api/health` shows `"llm":"replay"` and `replies` 26; `/api/voice` shows the stored clips per language (zeros and `live: false` until the clips are made and shipped, and then the page disables the Azure voice option and speaks with the browser voice); both languages; transcript, captions, ball sound, calm mode and screen-reader output; `/api/cuesheet` and its schema; the security headers; `POST /api/tts` for text that was not issued answers `403`; a clean browser window with no login; and that it works with no Foundry credential. Then set `SOUNDPITCH_LOG_FORWARDED` back off if the shape was seen.
 
-### Cost check (G6; read-only commands, *not run*)
+### Cost check (G6; read-only commands; step 1 done, steps 2 to 4 pending)
 
 Pay-As-You-Go has no spending limit; the 5 EUR budget only e-mails. The public price list has three undocumented meters named `Environment` (`Environment Management Hour`, `Environment Planned Maintenance Hour`, `Environment Private Endpoint`; USD 0.13 an hour in Italy North, effective 2026-09-01 to 2026-10-31). The most probable reading, an inference, is that they split the documented "Dedicated Plan Management" fee by cause, which this setup does not trigger. If they applied to every environment the cost would be about USD 3.1 a day. So the first deployment is followed by a check:
 
@@ -142,6 +142,18 @@ az group delete --name rg-soundpitch-demo --yes
 
 **Keep it up until 10 Nov 2026, 23:59 Pacific** (11 Nov, 08:59 in Italy): rules 4.8 require the project to be available free of charge and without restriction until the judging period ends. Delete the group only after that, and put both dates in the calendar.
 
+## Deployment record (2026-10-21)
+
+**CI.** The workflow was registered by GitHub only after the first push, and pushes of `main` and of a temporary branch started no run (the repository's events list showed no push event; the cause is on GitHub's side and was not found). `workflow_dispatch` works, so CI was started by hand: [run 39621035417](https://github.com/diego-sicignano/soundpitch/actions/runs/39621035417) on `42c004a` found one genuine failure, the end-to-end test S25 on Linux: the settings form carried an inline `onsubmit` that the page's own content security policy blocks (fixed in `09db91c`, with a test that no element carries an inline handler). [Run 39622166407](https://github.com/diego-sicignano/soundpitch/actions/runs/39622166407) on `09db91c`: backend, SDK, end-to-end and Docker jobs green, then `publish` pushed `ghcr.io/diego-sicignano/soundpitch:09db91c21a048312e1855c45f3629e07d7b6e54d`. The workflow's `publish` job runs on a manual dispatch of `main`, so every dispatch publishes.
+
+**Image.** The package was already public (the repository is public and the image is linked to it by its source label): an anonymous registry token and manifest request answered 200 and `docker pull` after `docker logout ghcr.io` worked. Inspected: user 10001, `SOUNDPITCH_LLM=replay`, no key or credential in its environment or build history.
+
+**Azure** (the pay-as-you-go subscription, checked by name and offer, never the Azure for Students one; `Microsoft.App` registered; the `containerapp` CLI extension installed): resource group `rg-soundpitch-demo`, environment `cae-soundpitch` created with `--enable-workload-profiles false --logs-destination none` (no workload profiles, no Log Analytics), container app `soundpitch` with the image above, external ingress on port 8000, 0.25 vCPU and 0.5 GiB, minimum 0 and maximum 1 replica, environment variables `SOUNDPITCH_LLM=replay`, `SOUNDPITCH_TRUST_PROXY=1`, `SOUNDPITCH_LOG_FORWARDED=1`, no secret and no registry credential. The public image needed no `registry set`.
+
+**Acceptance (G5).** `python -m app.smoke` on the public address: `ok`. A read-only script checked: `/api/health` (`replay`, 26 replies), the page without a login, the security headers and the policy, no inline handler, five presets, goal 1 in English (attempt 1) and Italian (attempt 2, per D20) with every must-say moment scheduled and no fallback, `/api/cuesheet` and its schema, WebVTT, `/api/voice` (no stored clips, not live), `POST /api/tts` with unissued text answering `403`, and an unknown preset answering `404`. The first request to the new app took 16.8 s (cold start); later ones about 0.1 s. The page flow (play, transcript, captions, ball sound) is covered by the end-to-end suite that ran in CI against the same code; it was not driven in a browser against the public address.
+
+**Cost gate.** G6 step 1 done: the environment has no workload profile (`workloadProfiles: null`, no Dedicated or Flexible plan), no private endpoint and no maintenance window. Steps 2 to 4 (Cost Management after 8 to 48 hours, any `Environment` meter above 0 means delete the environment and use the fallback, and once more before 10 Nov) are **pending**.
+
 ## Fallbacks
 
 - **Render Free (USD 0, not on Azure).** A web service from the same image (`ghcr.io/diego-sicignano/soundpitch:<sha>`) or from the repository's `Dockerfile`, no environment variable but `SOUNDPITCH_LLM=replay`, and `SOUNDPITCH_TRUST_PROXY=1` only after reading how Render writes `X-Forwarded-For`. Limits to accept: 0.1 CPU and 512 MB, spin-down after 15 minutes without traffic and about a minute to wake, 750 free hours a month, and a bandwidth cap that suspends all free services if exceeded. Not confirmed: that the Free type takes an image-backed service and that a public ghcr.io image pulls without credentials (a deploy from the repository is the alternative). It would not count as Azure hosting for criterion 3.
@@ -153,7 +165,7 @@ az group delete --name rg-soundpitch-demo --yes
 |---|---|---|
 | Foundry deployment `soundpitch-mini` (`gpt-4.1-mini`, Global Standard, capacity 8) | exists, created 2026-10-20; used on that day (a full recording run is about USD 0.03; Azure Cost Management shows EUR 0.05, USD 0.057, for everything on the subscription through 2026-10-21; the earlier test usage on an Azure for Students subscription, and the credit it used, are in `docs/hackathon/COMPLIANCE.md` and D23) | not called by the judges' path; the ledger (D11) limits a live run; Azure's 5 EUR budget only sends e-mail |
 | Speech clips | not generated | about USD 0.11 once, on the existing S0 resource, after approval |
-| Hosting | none | Container Apps Consumption, scale to zero, one replica at most, inside the monthly grants; cost gate G6; group deleted after judging |
+| Hosting | deployed 2026-10-21 | Container Apps Consumption, scale to zero, one replica at most, inside the monthly grants; cost gate G6; group deleted after judging |
 | Speech at run time | none | the public app holds no key |
 
 Azure's budgets alert, they do not stop spending (Microsoft Learn, "Create and manage budgets": a budget does not affect resources or stop consumption; cost data arrives 8 to 24 hours late). An automatic stop would need an action group calling a function; it was not built.
@@ -163,9 +175,9 @@ Azure's budgets alert, they do not stop spending (Microsoft Learn, "Create and m
 | Gate | What | Cost | Approval |
 |---|---|---|---|
 | G0 | offline code, tests, CI (done) | 0 | no |
-| G1 | public repository and push | 0 | yes: visible, hard to undo |
-| G2 | publish workflow started by hand; package made public; anonymous pull | 0 | yes: irreversible visibility |
+| G1 | public repository and push (done 2026-10-21) | 0 | yes: visible, hard to undo |
+| G2 | publish workflow started by hand; package public; anonymous pull (done 2026-10-21) | 0 | yes: irreversible visibility |
 | G3 | Speech: read key, Product Terms, 1 test clip, 140 clips | about USD 0.11 | yes |
-| G4 | register `Microsoft.App`, create the group, environment and app | inside the grants, per the cost gate | yes |
-| G5 | acceptance on the public address | 0 | no |
+| G4 | register `Microsoft.App`, create the group, environment and app (done 2026-10-21) | inside the grants, per the cost gate | yes |
+| G5 | acceptance on the public address (done 2026-10-21) | 0 | no |
 | G6 | cost check after 8 to 48 hours | 0 | no; a bad result means delete and fall back |
