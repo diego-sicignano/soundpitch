@@ -1,16 +1,16 @@
 # SoundPitch
 
-**Follow a football match by ear.** SoundPitch turns a stream of synthetic match events into a timed audio description, a ball sound that moves left and right with the play, and large captions, for blind, low-vision, deaf and hard-of-hearing fans. Every sentence is checked against the match events before anyone hears it.
+**Follow a football match by ear.** SoundPitch turns a stream of synthetic match events into a timed audio description, a ball sound that moves left and right with the play, and large captions, for blind, low-vision, deaf and hard-of-hearing fans. Every description sentence is checked against the match events before anyone hears it; the closing score-context sentence of a goal or a whistle is computed from the score by code (see below).
 
 Built for the [Microsoft x Premier League "Inside the Game" hackathon](docs/hackathon/SUMMARY.md). All data is synthetic: the teams (Northgate Red, Harbour Blue) and the players are invented. This project is not affiliated with, endorsed by or sponsored by Microsoft or the Premier League.
 
-> **Status (20 Oct 2026).** Done and tested: the offline pipeline, the player page, the grounded verifier, the Foundry describer, the usage ledger, the replay mode with 26 recorded Foundry replies that cover all 30 demo windows, the guarded voice endpoint, the cue-sheet JSON export and the Agent Framework workflow. **Not done:** no public deployment yet (so no demo URL), Azure AI Speech has never been called (no voice clip exists, so the demo speaks with the browser's own voice), no blind or low-vision listener has tested it. Plan and deadline: [`ROADMAP.md`](ROADMAP.md).
+> **Status (20 Oct 2026).** Done and tested: the offline pipeline, the player page, the grounded verifier, the Foundry describer, the usage ledger, the replay mode with 26 recorded Foundry replies that cover all 30 demo windows, the guarded voice endpoint, the cue-sheet JSON export, the score-context sentence (S31) and the Agent Framework workflow. **Not done:** no public deployment yet (so no demo URL), Azure AI Speech has never been called (no voice clip exists, so the demo speaks with the browser's own voice), no blind or low-vision listener has tested it. Plan and deadline: [`ROADMAP.md`](ROADMAP.md).
 
 ## For judges
 
 There is no hosted demo yet; this section is completed when there is (ticket T06). To try it today, run it locally in two minutes (below), then:
 
-1. Open <http://localhost:8000>, choose **Goal 1: Northgate, minute 16**, press **Play** (or the space bar). Use headphones: the ball sound moves with the play.
+1. Open <http://localhost:8000>, choose **Goal 1: Northgate, minute 16**, press **Play** (or the space bar). Use headphones: the ball sound moves with the play. The goal ends with what it means for the score ("The opening goal of the match.").
 2. Open **How it was checked**: how many sentences were verified, how many fell back to a template, the pipeline steps.
 3. Try **Italiano**, **calm mode**, the "My own screen reader" output, and the `detail` levels.
 4. The same session as JSON for a graphics or captioning system: <http://localhost:8000/api/cuesheet?preset=goal_1> and its [JSON Schema](docs/contracts/cuesheet.v1.schema.json).
@@ -22,11 +22,20 @@ The public demo will run `SOUNDPITCH_LLM=replay`: words that a Foundry model wro
 
 - **Audio description** in English or Italian, at three detail levels: essential (goals and chances), standard (plus build-up and turnovers), full (every phase of play).
 - **Ball sound**: one short sound per event. Stereo position follows the ball across the pitch, pitch rises towards the opponent's goal. Different sounds for a pass, a shot, a save, a goal, a whistle.
+- **Why the moment matters**: a goal, half-time and full-time end with one sentence on what the score now means ("That makes it level.", "Northgate take the lead.", "Northgate win." at full-time), written by code from the score and never by a model; the page marks it as "score context" (`SPEC.md` §5, D18).
 - **Captions** in large type, and a transcript that fills as the match plays. The commentary is marked with its own `lang`, so a screen reader switches voice for Italian.
 - **Calm mode**: only goals and whistles make a sound, and the voice slows down.
 - **Three outputs**: the browser's own voice (the default, which depends on the voices your browser and system have installed; the page says when there is none for the language), an Azure neural voice (offered only where the server has the stored clips or a Speech key; none exist in this repository yet), or plain text into an `aria-live` region for people who use their own screen reader.
 - **A visible plan**: the page draws the pitch and a timeline of when the voice speaks and when it is silent, and a report of what was checked.
 - **A machine-readable cue sheet** (`/api/cuesheet`) with versioned JSON Schema, and WebVTT captions.
+
+## Screenshots
+
+Local run in replay mode (recorded Foundry replies, no network), window "Goal 3: Northgate, minute 78", after playback. The goal sentence is verified; the italic closing sentence with the "score context" badge is written by code from the score and is not covered by the verifier.
+
+![The SoundPitch player after Goal 3, in English: the large caption, the listening settings, the pitch with the timeline of speech and silence, the transcript with the "checked" and "score context" badges, and the report "How it was checked".](docs/images/player-goal-en.png)
+
+![The same window in Italian: the commentary is marked with its own language, and the score-context sentence is in Italian.](docs/images/player-goal-it.png)
 
 ## How it works
 
@@ -39,7 +48,7 @@ The public demo will run `SOUNDPITCH_LLM=replay`: words that a Foundry model wro
                                       └── 2 retries ─┘  then the verified template fallback
 ```
 
-Only code decides **what is true** and **when it is said**; a model only chooses words. A sentence that fails verification is sent back twice, then the deterministic template (which always verifies) speaks and the cue is marked `fallback`. A longer walk through the code, with a reading order: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+Only code decides **what is true** and **when it is said**; a model only chooses words. A sentence that fails verification is sent back twice, then the deterministic template (which always verifies) speaks and the cue is marked `fallback`. After verification, code appends to a goal, half-time or full-time sentence one more, chosen from the score alone, on what the moment means ("That makes it level.", "Northgate take the lead.", "Northgate win."). It is kept apart in `Cue.context` and is not checked by the verifier (S31, D18). A longer walk through the code, with a reading order: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 | Stage (hackathon wording) | Module |
 |---|---|
@@ -47,6 +56,7 @@ Only code decides **what is true** and **when it is said**; a model only chooses
 | Interpret | `moments.py`: events grouped into moments with priority 0 to 3 |
 | Explain | `describer.py` (templates), `foundry.py` (a model on Microsoft Foundry), `replay.py` (its recorded replies) |
 | Verify | `verifier.py`: refs equal the facts the code derives; relations only as code-built phrases; every other word from a closed vocabulary; names and phrases only where a template puts them |
+| Context | `stakes.py`, applied by `pipeline.apply_context`: one fixed sentence on what the score now means, for goals, half-time and full-time; not model output |
 | Render | `timing.py`, `render.py`, `cuesheet.py` |
 | Personalize | `Profile` in `contracts.py`: detail, language, ball sound, calm mode, speech rate, output |
 | Orchestrate | `pipeline.py` (plain), `workflow.py` (the same steps as a Microsoft Agent Framework graph) |
@@ -83,7 +93,7 @@ Get-Content .env | ForEach-Object { if ($_ -match '^\s*([^#=\s][^=]*?)\s*=\s*(.*
 
 | Variable | Meaning |
 |---|---|
-| `SOUNDPITCH_LLM` | `scripted` (default, templates); `replay` (recorded Foundry replies, no network; `/api/health` shows how many are held); `foundry` (a live model, needs the packages, the two settings below and the cost ledger); `bad_then_good`, `always_bad` plant errors to show the retry and the fallback |
+| `SOUNDPITCH_LLM` | `scripted` (default, templates); `replay` (recorded Foundry replies, no network; `/api/health` shows how many are held); `foundry` (a live model, needs the packages, the two settings below and the cost ledger); `bad_then_good`, `always_bad` plant errors to show the retry and the fallback; any other value is a `503 llm_not_configured` that names the setting and never the value (also on `/api/health`) |
 | `SOUNDPITCH_ORCHESTRATOR` | `plain` (default) or `workflow` (Agent Framework graph; needs `requirements-agents.txt`) |
 | `FOUNDRY_PROJECT_ENDPOINT`, `FOUNDRY_MODEL` | The Foundry project and the deployment for `SOUNDPITCH_LLM=foundry`. `az login`; no key is used |
 | `SOUNDPITCH_LLM_CALLS_PER_MINUTE`, `..._PER_DAY`, `SOUNDPITCH_LLM_TOKENS_PER_DAY`, `SOUNDPITCH_LLM_EUR_PER_MONTH`, `SOUNDPITCH_USAGE_DB` | Cost limits of the live model, kept in one SQLite file: default 2 a minute, 20 a day, 120,000 tokens a day, 2.00 EUR a month of estimated spend (never above 4.00). Over a limit, or if the file cannot be used, the call is not made and the template speaks (D11) |
@@ -131,6 +141,7 @@ The image runs `SOUNDPITCH_LLM=replay` as a non-root user and needs no writable 
 - No blind or low-vision listener has tested it. The style follows public guidance (RNIB, Sky Sports' radio-style description) and is unvalidated.
 - The match is generated, so pitch positions are plausible, not measured.
 - The verifier checks where facts and words come from, not the meaning of a sentence (see above).
+- The score-context sentence (S31) is not checked by the verifier: it is a fixed phrase picked by code from the score, covered by tests. Its Italian wording was written by the assistant (singular verb with a club name, "Northgate passa in vantaggio") and has not been reviewed by a native speaker; the older Italian templates still use plural verbs after a club name, and changing them would alter the verifier's vocabulary and the recorded replies.
 - The Foundry model copies the template sentences in most cues (own wording in 0% of English and 13.6% of Italian cues in the recorded run, 1.2% and 16.0% in an earlier one, `docs/evidence/foundry-run.md`), so today it adds little wording of its own. One of its Italian sentences is not good Italian and the verifier accepted it, because it does not check meaning; it is kept as recorded and documented, and the owner reviewed the other eight Italian sentences the model wrote. The figures are two runs of one deployment.
 - Model spending is limited by the application, not by Azure: the 5 EUR budget only sends e-mail, 8 to 24 hours late, and pay-as-you-go has no cutoff. The ledger counts estimates, per host (D11). The judges' path makes no model call.
 - Speech spending is limited only by the pricing tier of the Speech resource; the application's limits live in memory and restart at zero (SPEC §8).
@@ -143,7 +154,7 @@ This repository was written with the help of an AI coding assistant (Claude Code
 ## Repository map
 
 ```
-SPEC.md            behaviour, test ids, acceptance rows S1-S30
+SPEC.md            behaviour, test ids, acceptance rows S1-S31
 CONTEXT.md         glossary and the map of the data contracts
 ROADMAP.md         done, tickets, schedule
 CLAUDE.md          instructions for the coding assistant used on this repo
@@ -151,7 +162,7 @@ backend/app/       the pipeline, the API, the verifier, the describers, the work
 backend/tests/     pytest suite
 frontend/          index.html, app.js, styles.css (no build step)
 e2e/               Playwright tests with axe-core
-docs/              architecture, deploy, decisions, evaluation, evidence, contracts, hackathon rules, submission drafts
+docs/              architecture, deploy, decisions, evaluation, evidence, contracts, screenshots, hackathon rules, submission drafts
 .github/           CI: backend tests, SDK tests, end-to-end tests, Docker build and smoke
 ```
 

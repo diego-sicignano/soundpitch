@@ -4,13 +4,13 @@ State on 2026-10-20: **nothing is deployed, no hosting resource has been created
 
 ## What is deployed, and what is not
 
-The judges' path is the container image in the `Dockerfile`: the page and the API, `SOUNDPITCH_LLM=replay`, no key, no Azure login, no network call, no writable path, no database. It answers `GET /api/health` with `{"status":"ok","llm":"replay","replies":<n>}`; `replies` is the number of recorded Foundry replies the image holds, and `0` means the verified templates speak. The judge-facing path does not depend on Foundry credentials or on outbound connectivity.
+The judges' path is the container image in the `Dockerfile`: the page and the API, `SOUNDPITCH_LLM=replay`, no key, no Azure login, no network call, no writable path, no database. It answers `GET /api/health` with `{"status":"ok","llm":"replay","replies":<n>}`; `replies` is the number of recorded Foundry replies the image holds, and `0` means the verified templates speak. A mistyped `SOUNDPITCH_LLM` makes it answer `503 llm_not_configured` (the container is then reported unhealthy) instead of `ok`; the message names the setting and never its value (S32, D19). The judge-facing path does not depend on Foundry credentials or on outbound connectivity.
 
 The voice is spoken from **stored clips** (`backend/app/audio/`, S26): the image holds no Speech key. The live Foundry describer and its cost ledger (a SQLite file, D11) are **not part of the image**: the judges do not need them (replay covers the 30 windows of the demo) and the ledger would need a persistent writable file; the App Service documentation on custom-mounted Azure Storage advises against using a mount for local databases such as SQLite, and SQLite's own guide on network file systems warns that locking can misbehave there (both read on 2026-10-20 through a summarising tool; re-read them before relying on the exact wording). If a live model is ever served publicly, that needs a different, approved design; it is not planned.
 
 ## Build and run locally
 
-*Run on 2026-10-20* (Docker 29.6.2 on Windows): the image built; it ran with `--read-only --cap-drop ALL --security-opt no-new-privileges`; the process ran as UID 10001; `python -m app.smoke` inside the container printed `ok`; `/api/health` answered `"llm":"replay","replies":26`; writing under `/srv/backend` failed with "Read-only file system"; and with `--network none` the container was healthy and passed the smoke check. With a throw-away clip folder mounted read-only over `/srv/backend/app/audio` (one made-up clip, not Speech output), `POST /api/tts` for an issued sentence answered `200 audio/mpeg` with `X-Audio-Rate: 1` and no key, and for text that was never issued it answered `403`. The CI job `docker` repeats the first part on every push.
+*Run on 2026-10-20 and again on 2026-10-21 after S31 and D19* (Docker 29.6.2 on Windows; the second run rebuilt the image and repeated the read-only, non-root, `--network none` and smoke checks, and a mistyped `SOUNDPITCH_LLM` answered `/api/health` with 503): the image built; it ran with `--read-only --cap-drop ALL --security-opt no-new-privileges`; the process ran as UID 10001; `python -m app.smoke` inside the container printed `ok`; `/api/health` answered `"llm":"replay","replies":26`; writing under `/srv/backend` failed with "Read-only file system"; and with `--network none` the container was healthy and passed the smoke check. With a throw-away clip folder mounted read-only over `/srv/backend/app/audio` (one made-up clip, not Speech output), `POST /api/tts` for an issued sentence answered `200 audio/mpeg` with `X-Audio-Rate: 1` and no key, and for text that was never issued it answered `403`. The CI job `docker` repeats the first part on every push. The 2026-10-21 run is the one that includes S31.
 
 ```powershell
 docker build -t soundpitch .
@@ -20,7 +20,7 @@ cd backend; .\.venv\Scripts\python.exe -m app.smoke http://localhost:8000; cd ..
 
 ## Recording the replay file (needs approval; spends model calls)
 
-The replay file `backend/app/replay_data/foundry_replies.json` holds the replies a Foundry model gave to every request of the demo (5 windows x 3 detail levels x 2 languages, first attempt). **Recorded on 2026-10-20: 26 replies, 30 of 30 requests** (`docs/evidence/foundry-run.md`). Before it existed the replay mode spoke the verified templates. The tool needs the optional packages (Python 3.13). Expected size: about 30 to 60 calls of the `gpt-4.1-mini` deployment, a few cents at the ledger's rate. Do it once, after the prompt is final: **any change to `SYSTEM`, the templates or the vocabulary changes the keys** and the committed file then has no matching reply (`tests/test_replay.py` fails once the file has content and no longer covers every window, and `python -m app.replay_export --check` says how many requests are covered). The clip sentences below depend on those replies, so re-recording them means regenerating the clips.
+The replay file `backend/app/replay_data/foundry_replies.json` holds the replies a Foundry model gave to every request of the demo (5 windows x 3 detail levels x 2 languages, first attempt). **Recorded on 2026-10-20: 26 replies, 30 of 30 requests** (`docs/evidence/foundry-run.md`). Before it existed the replay mode spoke the verified templates. The tool needs the optional packages (Python 3.13). Expected size: about 30 to 60 calls of the `gpt-4.1-mini` deployment, a few cents at the ledger's rate. Do it once, after the prompt is final: **any change to `SYSTEM`, the templates or the vocabulary changes the keys** (the score-context sentence of S31 is added after the verifier and is not part of a key) and the committed file then has no matching reply (`tests/test_replay.py` fails once the file has content and no longer covers every window, and `python -m app.replay_export --check` says how many requests are covered). The clip sentences below depend on those replies, so re-recording them means regenerating the clips.
 
 ```powershell
 cd backend
@@ -38,16 +38,16 @@ Then run the tests, read the generated `docs/evidence/foundry-run.md` (it now ra
 
 ## Making the voice clips (G3: needs approval; spends Speech characters)
 
-The page can only say 140 distinct sentences (72 English, 68 Italian, 6,809 characters): every sentence the pipeline accepts for the five windows, three detail levels and two languages, in its full and short form, with the recorded model words. `python -m app.clips_build` lists them, sends nothing and needs no key:
+The page can only say 140 distinct sentences (72 English, 68 Italian, 7,150 characters): every sentence the pipeline accepts for the five windows, three detail levels and two languages, in its full and short form, with the recorded model words and the score-context sentence of goal, half-time and full-time cues. `python -m app.clips_build` lists them, sends nothing and needs no key:
 
 ```powershell
 cd backend; .\.venv\Scripts\python.exe -m app.clips_build; cd ..
-# the demo can speak 140 sentences (en 72, it 68), 6809 characters
-# stored clips: 0 of 140; missing: 140 (6809 characters)
-# estimated cost of the missing clips at USD 15 per million characters: 0.10 USD (the price is to be confirmed before use)
+# the demo can speak 140 sentences (en 72, it 68), 7150 characters
+# stored clips: 0 of 140; missing: 140 (7150 characters)
+# estimated cost of the missing clips at USD 15 per million characters: 0.11 USD (the price is to be confirmed before use)
 ```
 
-**Estimated cost: about USD 0.10** for all 140 clips (USD 15 per million characters is the standard neural voice figure on Microsoft Learn's "Azure AI Speech quotas and limits"; the public pricing page did not show it, so confirm it first). **Nothing has been generated.** What needs the owner's approval first:
+**Estimated cost: about USD 0.11** for all 140 clips (USD 15 per million characters is the standard neural voice figure on Microsoft Learn's "Azure AI Speech quotas and limits"; the public pricing page did not show it, so confirm it first). **Nothing has been generated.** What needs the owner's approval first:
 
 1. Read the key and region of the existing Speech-capable account (the Foundry account is of kind AIServices, S0) without printing them; it has not been checked that its key works against the regional text-to-speech endpoint.
 2. Read the Azure AI Speech **Product Terms** in the original, on what may be done with the audio output (the summary seen so far suggests the right to publish synthesised audio is reserved to paid-tier customers, which S0 is). If the terms do not allow shipping the clips, stop: the page keeps the browser voice.
@@ -67,7 +67,7 @@ Then run the tests, listen to a clip of each language, commit `backend/app/audio
 
 ## Publishing the image (G2: needs the repository to exist; *not run*)
 
-The workflow job `publish` in `.github/workflows/ci.yml` **never runs on a push or a pull request**: ordinary CI (backend, sdk, e2e, docker) runs on both, and `publish` runs only when the owner starts the workflow by hand (Actions tab, "Run workflow", branch `main`), after those four jobs pass, with the built-in `GITHUB_TOKEN` (`packages: write`, nothing else, no Azure identity). So the first push of the repository publishes nothing. A manual run pushes `ghcr.io/diego-sicignano/soundpitch:<commit sha>`; there is no `latest` tag. The `Dockerfile` label `org.opencontainers.image.source` links the package to the repository; the repository address in it is the **planned** one (`diego-sicignano/soundpitch`); the repository does not exist yet, and the label, the image names in this file and the workflow's owner (taken from the repository at run time) must be corrected if it is created under another name.
+The workflow job `publish` in `.github/workflows/ci.yml` **never runs on a push or a pull request**: ordinary CI (backend, sdk, e2e, docker) runs on both, and `publish` runs only when the owner starts the workflow by hand (Actions tab, "Run workflow", branch `main`), after those four jobs pass, with the built-in `GITHUB_TOKEN` (`packages: write`, nothing else, no Azure identity). So the first push of the repository publishes nothing. The whole workflow also runs with a read-only token (`permissions: contents: read` at the top, a test checks it); only `publish` adds `packages: write`. A manual run pushes `ghcr.io/diego-sicignano/soundpitch:<commit sha>`; there is no `latest` tag. The `Dockerfile` label `org.opencontainers.image.source` links the package to the repository; the repository address in it is the **planned** one (`diego-sicignano/soundpitch`); the repository does not exist yet, and the label, the image names in this file and the workflow's owner (taken from the repository at run time) must be corrected if it is created under another name.
 
 A new package is **private**. Making it public is a manual, irreversible step (package settings, "Change visibility"), and it needs the owner's approval. Then test an anonymous pull:
 
@@ -152,7 +152,7 @@ az group delete --name rg-soundpitch-demo --yes
 | Item | State | Control |
 |---|---|---|
 | Foundry deployment `soundpitch-mini` (`gpt-4.1-mini`, Global Standard, capacity 8) | exists; used once on 2026-10-20 (about USD 0.03) | not called by the judges' path; the ledger (D11) limits a live run; Azure's 5 EUR budget only sends e-mail |
-| Speech clips | not generated | about USD 0.10 once, on the existing S0 resource, after approval |
+| Speech clips | not generated | about USD 0.11 once, on the existing S0 resource, after approval |
 | Hosting | none | Container Apps Consumption, scale to zero, one replica at most, inside the monthly grants; cost gate G6; group deleted after judging |
 | Speech at run time | none | the public app holds no key |
 
@@ -165,7 +165,7 @@ Azure's budgets alert, they do not stop spending (Microsoft Learn, "Create and m
 | G0 | offline code, tests, CI (done) | 0 | no |
 | G1 | public repository and push | 0 | yes: visible, hard to undo |
 | G2 | publish workflow started by hand; package made public; anonymous pull | 0 | yes: irreversible visibility |
-| G3 | Speech: read key, Product Terms, 1 test clip, 140 clips | about USD 0.10 | yes |
+| G3 | Speech: read key, Product Terms, 1 test clip, 140 clips | about USD 0.11 | yes |
 | G4 | register `Microsoft.App`, create the group, environment and app | inside the grants, per the cost gate | yes |
 | G5 | acceptance on the public address | 0 | no |
 | G6 | cost check after 8 to 48 hours | 0 | no; a bad result means delete and fall back |

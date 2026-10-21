@@ -27,7 +27,7 @@ The first seven limits stop the call **before** it reaches Azure. The Azure rows
 1. The reply may already be stored (same match, language, moments, issues and instructions): no call, no cost, also after a restart.
 2. Otherwise the describer reserves the **worst case** in one SQLite `BEGIN IMMEDIATE` transaction: estimated prompt tokens + 1,000 output tokens, three SDK attempts, at the USD list price counted 1:1 as euros plus 25% (0.50 per million input tokens, 2.00 per million output). If any limit would be passed, nothing is sent, the log gets one line without secrets (`model call refused before contacting Azure: day limit reached`) and the trace says `llm budget exhausted: templates (day)`; the verified templates speak.
 3. The call is sent. When it returns, the reservation is replaced by the usage the provider reported (`usage_details`); without a report, by an estimate.
-4. A call that raises, times out or is cancelled **keeps its worst case**, because it may have been billed. Only a call that never left the process (the submit failed) is released.
+4. A call that raises, times out or is cancelled **keeps its worst case**, because it may have been billed; a call that timed out is settled with the reported usage if its answer arrives later. Only a call that never left the process (the submit failed) is released.
 5. If the database cannot be opened, read or written, the call is refused (fail closed). No retry loop: the pipeline's retries each have to reserve again and are refused as soon as a limit is reached.
 
 ## Assumptions

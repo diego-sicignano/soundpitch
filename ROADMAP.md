@@ -28,6 +28,8 @@ Judging weights five criteria at 20% each and ties go to criterion 1 (technology
 | S24 | Replay of recorded Foundry replies, re-verified on every session (D12) |
 | S25 | Security headers and a content security policy (D16) |
 | S26, S27, S28 | Stored voice clips and their generation tool (dry run only: **no clip exists yet**), defensive `X-Forwarded-For`, `playbackRate` and the synthetic-voice note (D17) |
+| S31 | Why the moment matters: a goal, half-time and full-time end with a sentence on what the score now means, written by code from the score state, kept apart in `Cue.context` and shown as "score context" (D18) |
+| S32 | A mistyped `SOUNDPITCH_LLM` or `SOUNDPITCH_ORCHESTRATOR` is a clear `503 llm_not_configured` (also on `/api/health`) that never echoes the value, not a generic 500 (D19) |
 | S29, S30 | The page offers the Azure voice only where the server has clips or a key, and says so when the browser has no voice for the language |
 
 ## Tickets

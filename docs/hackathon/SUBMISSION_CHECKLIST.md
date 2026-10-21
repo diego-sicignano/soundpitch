@@ -11,6 +11,7 @@ Deadlines are in [`SUMMARY.md`](SUMMARY.md). Registration closed **20 Oct 2026, 
 
 - [x] Newly built after 29 Sep 2026 (first commit: 2026-10-19; the owner states no code existed before 29 Sep).
 - [x] Uses only synthetic data. No real match data, names or logos.
+- [x] Explains why a moment matters (S31: a code-written score-context sentence; not checked by the verifier, and said so).
 - [ ] Runs as shown in the video. `pytest`, `ruff check`, `npm run e2e` green on a clean checkout (CI green after the first push).
 - [ ] Names the Microsoft and Azure technologies actually used, in the pitch (see the table in `README.md`).
 

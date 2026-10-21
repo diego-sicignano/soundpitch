@@ -49,6 +49,7 @@ Glossary and the map of the data contracts. Behaviour is in [`SPEC.md`](SPEC.md)
 | Match data | `Player`, `TeamInfo`, `Event`, `Match`, `MatchHeader` |
 | Interpretation | `Moment` |
 | Description | `FactRef`, `Description` |
+| Stakes | `Cue.context`, `app/stakes.py`: the code-written sentence on what the score now means (SPEC §5) |
 | Listener | `Profile`, `Preset` |
 | Plan | `Cue`, `Earcon`, `Dropped`, `BallPoint`, `TraceStep`, `PriorityStats`, `Report`, `Session` |
 | HTTP | `TtsRequest`, `VoiceSupport`, `ErrorResponse` |
