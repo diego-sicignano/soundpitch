@@ -38,12 +38,12 @@ Then run the tests, read the generated `docs/evidence/foundry-run.md` (it now ra
 
 ## Making the voice clips (G3: needs approval; spends Speech characters)
 
-The page can only say 140 distinct sentences (72 English, 68 Italian, 7,150 characters): every sentence the pipeline accepts for the five windows, three detail levels and two languages, in its full and short form, with the recorded model words and the score-context sentence of goal, half-time and full-time cues. `python -m app.clips_build` lists them, sends nothing and needs no key:
+The page can only say 140 distinct sentences (72 English, 68 Italian, 7,141 characters): every sentence the pipeline accepts for the five windows, three detail levels and two languages, in its full and short form, with the recorded model words and the score-context sentence of goal, half-time and full-time cues. `python -m app.clips_build` lists them, sends nothing and needs no key:
 
 ```powershell
 cd backend; .\.venv\Scripts\python.exe -m app.clips_build; cd ..
-# the demo can speak 140 sentences (en 72, it 68), 7150 characters
-# stored clips: 0 of 140; missing: 140 (7150 characters)
+# the demo can speak 140 sentences (en 72, it 68), 7141 characters
+# stored clips: 0 of 140; missing: 140 (7141 characters)
 # estimated cost of the missing clips at USD 15 per million characters: 0.11 USD (the price is to be confirmed before use)
 ```
 
@@ -85,7 +85,7 @@ The cheapest form of the service, for the judging window only: its own resource 
 |---|---|---|
 | resource group | `rg-soundpitch-demo` (Italy North) | holds nothing else, so deleting it cannot touch the Foundry resources |
 | environment | `--enable-workload-profiles false`, `--logs-destination none` | no Dedicated profile, no private endpoint, no planned maintenance, no Log Analytics: nothing billed per environment according to the documentation |
-| size | 0.25 vCPU, 0.5 GiB | the smallest valid pair; measured about 50 MiB in use, 200 parallel session requests in 9.8 s without error |
+| size | 0.25 vCPU, 0.5 GiB | the smallest valid pair; a local Docker test under the same limits used 41 to 73 MiB and served 200 parallel session requests without error (figures and limits of that test in [T06](tickets/T06-deploy.md)); it says nothing about Container Apps, cold starts or the network |
 | replicas | min 0, max 1 | no always-on replica; the voice endpoint's limits live in one process's memory |
 | ingress | external, target port 8000 | judges open it without a login (rules 4.8) |
 | `SOUNDPITCH_LLM` | `replay` (the image default) | no model call, no Foundry credential, no outbound connection |
@@ -151,7 +151,7 @@ az group delete --name rg-soundpitch-demo --yes
 
 | Item | State | Control |
 |---|---|---|
-| Foundry deployment `soundpitch-mini` (`gpt-4.1-mini`, Global Standard, capacity 8) | exists; used once on 2026-10-20 (about USD 0.03) | not called by the judges' path; the ledger (D11) limits a live run; Azure's 5 EUR budget only sends e-mail |
+| Foundry deployment `soundpitch-mini` (`gpt-4.1-mini`, Global Standard, capacity 8) | exists, created 2026-10-20; used on that day (a full recording run is about USD 0.03; Azure Cost Management shows EUR 0.05, USD 0.057, for everything on the subscription through 2026-10-21; whether any credit applied is only visible on the October invoice, `docs/hackathon/COMPLIANCE.md`) | not called by the judges' path; the ledger (D11) limits a live run; Azure's 5 EUR budget only sends e-mail |
 | Speech clips | not generated | about USD 0.11 once, on the existing S0 resource, after approval |
 | Hosting | none | Container Apps Consumption, scale to zero, one replica at most, inside the monthly grants; cost gate G6; group deleted after judging |
 | Speech at run time | none | the public app holds no key |

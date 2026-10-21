@@ -60,7 +60,7 @@ Status values: `todo`, `in progress`, `done`. Change the row in the same commit 
 | 22 Oct | **T06** deploy (approval), **T04** if a Speech tier is chosen |
 | 23 Oct | Rehearse the demo; fix what the deployed URL shows |
 | 24 to 25 Oct | **T07** video and pitch; T08 and T09 only if there is time |
-| 26 Oct | **T10**: history with the noreply address, final scans, public repository, submit |
+| 26 Oct | **T10**: public repository, first CI run, submit (the history was prepared locally on 21 Oct, D22: noreply address, no copy of the rules; repeat the scan after any later commit) |
 | 27 Oct | Buffer. Do not change the deployment while judging runs |
 
 ## Known limits
@@ -73,3 +73,4 @@ Status values: `todo`, `in progress`, `done`. Change the row in the same commit 
 - Speech spending has no hard cap until a pricing tier is chosen; the application's limits restart with the process (D14).
 - The pitch positions are generated, not measured.
 - Known, not fixed (found by an independent review on 2026-10-20, all low): two identical concurrent voice requests both call Azure and both count characters (no single flight); the per-client voice limit reads only the first `X-Forwarded-For` header line and a port suffix in that header was not checked against Container Apps; `markLanguage` is not reset after a failed load; the replay key hashes the system prompt but not the per-moment payload, so a changed template can leave a stale recorded reply that the verifier still checks (only the share of fallbacks would change); a recorded file with one invalid entry is ignored as a whole (`/api/health` then shows `replies: 0`).
+- Italian wording (D20, 2026-10-21): the templates now agree with a club name (singular verbs, no article before a name). The recorded Italian sentences that kept the old wording are rejected by the verifier and replaced by the templates at attempt 2, so 14 of the 15 Italian demo sessions report 2 attempts and the model's own words survive only in the other moments; re-recording would restore them (D20 assesses it: 52 of 81 Italian moments are affected, a full run is about USD 0.03 and also redraws the English, so it was left for the owner's separate authorization). Only the owner has read the Italian; no native-speaker review is recorded.

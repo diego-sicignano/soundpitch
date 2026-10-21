@@ -27,8 +27,9 @@ Deadlines are in [`SUMMARY.md`](SUMMARY.md). Registration closed **20 Oct 2026, 
 
 ## Public repository
 
-- [ ] History prepared: author and committer e-mail are the GitHub noreply address; backup kept outside the repository.
-- [ ] Final scan of the whole history and the tree: no secrets, no personal data, no private notes, no competitor research.
+- [x] History prepared (D22, 2026-10-21): author and committer e-mail are the GitHub noreply address in every commit; the Official Rules and playlist copies are in no commit; a backup (bundle, mirror clone, uncommitted files) is kept outside the repository.
+- [ ] After the October invoice (expected early November): read the credit lines of the Foundry subscription's billing profile and note the result in `COMPLIANCE.md` (the Azure billing row).
+- [x] Scan of the whole history and the tree on 2026-10-21 (D22): no e-mail address other than the noreply one, no key or token pattern, no private notes, no competitor research. Repeat after any later commit.
 - [ ] Repository created on GitHub as **public** (rules: must be public to be considered).
 - [ ] `backend/.env` is not committed (git-ignored).
 - [ ] README has the pitch, screenshots, how to run, the technologies used, and the honest limits.

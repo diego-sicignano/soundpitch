@@ -141,7 +141,7 @@ The image runs `SOUNDPITCH_LLM=replay` as a non-root user and needs no writable 
 - No blind or low-vision listener has tested it. The style follows public guidance (RNIB, Sky Sports' radio-style description) and is unvalidated.
 - The match is generated, so pitch positions are plausible, not measured.
 - The verifier checks where facts and words come from, not the meaning of a sentence (see above).
-- The score-context sentence (S31) is not checked by the verifier: it is a fixed phrase picked by code from the score, covered by tests. Its Italian wording was written by the assistant (singular verb with a club name, "Northgate passa in vantaggio") and has not been reviewed by a native speaker; the older Italian templates still use plural verbs after a club name, and changing them would alter the verifier's vocabulary and the recorded replies.
+- The score-context sentence (S31) is not checked by the verifier: it is a fixed phrase picked by code from the score, covered by tests. Its Italian wording was written by the assistant (singular verb with a club name, "Northgate passa in vantaggio") and has not been reviewed by a native speaker; the Italian templates were corrected to the same singular on 2026-10-21 (D20). The recorded Italian sentences that kept the old plural wording are now rejected by the verifier and replaced by the templates, so 14 of the 15 Italian demo sessions report 2 attempts and every moment is still verified; re-recording the Italian windows would restore the model's own words.
 - The Foundry model copies the template sentences in most cues (own wording in 0% of English and 13.6% of Italian cues in the recorded run, 1.2% and 16.0% in an earlier one, `docs/evidence/foundry-run.md`), so today it adds little wording of its own. One of its Italian sentences is not good Italian and the verifier accepted it, because it does not check meaning; it is kept as recorded and documented, and the owner reviewed the other eight Italian sentences the model wrote. The figures are two runs of one deployment.
 - Model spending is limited by the application, not by Azure: the 5 EUR budget only sends e-mail, 8 to 24 hours late, and pay-as-you-go has no cutoff. The ledger counts estimates, per host (D11). The judges' path makes no model call.
 - Speech spending is limited only by the pricing tier of the Speech resource; the application's limits live in memory and restart at zero (SPEC §8).
@@ -149,7 +149,7 @@ The image runs `SOUNDPITCH_LLM=replay` as a non-root user and needs no writable 
 
 ## Built with AI assistance
 
-This repository was written with the help of an AI coding assistant (Claude Code). The specification, the acceptance rows and the reasons for each choice are in [`SPEC.md`](SPEC.md), [`ROADMAP.md`](ROADMAP.md) and [`docs/DECISIONS.md`](docs/DECISIONS.md); [`CLAUDE.md`](CLAUDE.md) is the instruction file the assistant works from.
+This repository was written with the help of an AI coding assistant (Claude Code). The specification, the acceptance rows and the reasons for each choice are in [`SPEC.md`](SPEC.md), [`ROADMAP.md`](ROADMAP.md) and [`docs/DECISIONS.md`](docs/DECISIONS.md); [`CLAUDE.md`](CLAUDE.md) is the instruction file the assistant works from. The owner set the goal, wrote the rules the assistant follows (including the approval gates for anything that spends money or is hard to undo), approved the live model runs and the external steps, and reviewed the recorded Italian; the repository records those decisions, and says plainly that it cannot prove how much of the text was typed by whom. What the rules, the tool terms and Italian and US copyright guidance say about that is read in [`docs/hackathon/COMPLIANCE.md`](docs/hackathon/COMPLIANCE.md).
 
 ## Repository map
 
@@ -168,6 +168,6 @@ docs/              architecture, deploy, decisions, evaluation, evidence, contra
 
 ## Licence and third-party software
 
-[MIT](LICENSE). The hackathon rules grant Microsoft and the Premier League a licence to use submissions (section 7 of the rules).
+[MIT](LICENSE). The hackathon rules grant Microsoft and the Premier League a licence to use submissions (section 7 of the rules). The Official Rules and Microsoft's playlist page are not redistributed here (their source repository is MIT licensed, but the rules also reserve all rights; see `docs/hackathon/README.md`); the rule-by-rule review is in [`docs/hackathon/COMPLIANCE.md`](docs/hackathon/COMPLIANCE.md).
 
 Runtime: FastAPI, Pydantic (MIT), Uvicorn, httpx (BSD-3-Clause). Optional: Microsoft Agent Framework, Azure SDK for Python (MIT), OpenAI Python SDK (Apache-2.0). Development and tests: pytest, Ruff (MIT), Playwright (Apache-2.0), axe-core (MPL-2.0, used as a test tool, not shipped). Versions are pinned in `backend/requirements*.txt` and `package-lock.json`; licences were read from the installed package metadata on 2026-10-20. The page uses no external script, font, image or sound: the ball sounds are synthesised in the browser. `docs/hackathon/OFFICIAL_RULES.md` is a verbatim copy of a file from `microsoft/insidethegamehackathon` (MIT).

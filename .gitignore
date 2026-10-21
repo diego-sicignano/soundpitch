@@ -13,3 +13,5 @@ backend/data/
 *.sqlite
 *.sqlite-*
 .claude/worktrees/
+# a private copy of the Official Rules and the learning playlists; not redistributed (docs/hackathon/COMPLIANCE.md)
+docs/hackathon/_local/

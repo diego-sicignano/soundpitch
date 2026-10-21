@@ -1,6 +1,6 @@
 # Microsoft x Premier League "Inside the Game" hackathon: what the rules say
 
-Source: [`OFFICIAL_RULES.md`](OFFICIAL_RULES.md) (verbatim, downloaded 2026-10-19). Section numbers below are the rules' own. This page is our reading, not legal advice; where it matters, read the original.
+Source: the [Official Rules](https://github.com/microsoft/insidethegamehackathon/blob/main/OFFICIAL%20RULES.md) as downloaded on 2026-10-19 (unchanged upstream since 2026-09-28; the text is not redistributed here, see [`README.md`](README.md)). Section numbers below are the rules' own. This page is our reading, not legal advice; where it matters, read the original. The rules that could disqualify the project, with the evidence and the decisions, are in [`COMPLIANCE.md`](COMPLIANCE.md).
 
 ## Dates
 
