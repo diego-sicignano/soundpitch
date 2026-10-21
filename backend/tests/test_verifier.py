@@ -119,3 +119,19 @@ def test_templates_never_use_digits_except_scores_and_minutes():
         for number in re.findall(r"\d+", d.full + d.short):
             assert int(number) <= 90
     assert isinstance(next(iter(described.values())), Description)
+
+
+def test_a_name_with_regex_characters_is_matched_literally_and_cannot_break_the_check():
+    """The check for names of players who are not in the moment must not read a name as a pattern: an
+    unescaped "(" raised re.error in `check`, which the fallback calls without a guard."""
+    players = [MATCH.away.players[0].model_copy(update={"name": "Pet(rov"}), *MATCH.away.players[1:]]
+    match = MATCH.model_copy(update={"away": MATCH.away.model_copy(update={"players": players})})
+    outsider = players[0]
+    ctx = Context(match, "en")
+    verifier = Verifier(ctx)
+    moment = BY_KIND["kickoff"]
+    assert outsider.name in ctx.all_names and outsider.name not in ctx.involved(moment)
+    described = TemplateDescriber().describe([moment], ctx, {}, 1)[moment.id]
+    assert verifier.check(moment, described) == []
+    said = described.model_copy(update={"full": described.full + " Pet(rov", "short": described.short})
+    assert "Pet(rov is not in this moment" in verifier.check(moment, said)

@@ -48,14 +48,14 @@ Hand-written commentary, all of it true. *Sentences* are distinct sentence patte
 | Corpus | Language | Sentences | Accepted on every moment | Accepted on none | Sentence-on-moment pairs accepted |
 |---|---|---|---|---|---|
 | written without the word list | `en` | 44 | 13 | 31 | 578 of 1951 (29.6%) |
-| written without the word list | `it` | 44 | 16 | 28 | 625 of 1942 (32.2%) |
+| written without the word list | `it` | 44 | 16 | 28 | 680 of 1942 (35.0%) |
 | written with the word list in hand | `en` | 29 | 16 | 13 | 640 of 1365 (46.9%) |
 | written with the word list in hand | `it` | 24 | 17 | 7 | 914 of 1163 (78.6%) |
 
 The first corpus is the price of a closed vocabulary (SPEC §5, D9) when a writer ignores it. The second, written by an independent reviewer who had the word lists, tells how reachable the contract is. Neither is a measurement of a model (that needs a live run: `python -m app.foundry_run`). Words that caused most rejections in the first corpus, to be reviewed for the vocabulary (a word may join it only if it cannot change a fact):
 
 - `en`: `are` (335), `with` (255), `building` (175), `pass` (175), `we` (160), `intercepts` (120), `it` (93), `kicking` (80), `off` (80), `by` (80), `score` (80), `commits` (78), `from` (70), `assisted` (60)
-- `it`: `al` (195), `palla` (185), `costruisce` (175), `piede` (175), `si` (160), `parte` (160), `di` (129), `riprende` (120), `intercetta` (120), `del` (117), `calcia` (100), `è` (89), `batte` (80), `attacca` (80)
+- `it`: `del` (357), `al` (195), `palla` (185), `piede` (175), `si` (160), `parte` (160), `di` (129), `riprende` (120), `intercetta` (120), `calcia` (100), `è` (89), `batte` (80), `primo` (80), `pallone` (80)
 
 ## Fallback: what the listener hears
 
@@ -66,7 +66,7 @@ A deterministic describer says one sentence of the corpus for each moment it has
 | written with the word list in hand | `en` | 617 | 281 (45.5%) | 336 (54.5%) |
 | written with the word list in hand | `it` | 617 | 538 (87.2%) | 79 (12.8%) |
 | written without the word list | `en` | 617 | 223 (36.1%) | 394 (63.9%) |
-| written without the word list | `it` | 617 | 234 (37.9%) | 383 (62.1%) |
+| written without the word list | `it` | 617 | 238 (38.6%) | 379 (61.4%) |
 
 ## Retry and fallback
 

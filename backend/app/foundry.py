@@ -457,7 +457,8 @@ def _euros_from_env(name: str, default: float) -> float:
 
 
 def ledger_from_env() -> UsageLedger:
-    """The ledger with the strict defaults; the environment may only lower them (the month stays <= 4 EUR)."""
+    """The ledger with the strict defaults. The environment may change the calls and tokens (the recording run
+    raises them on purpose); only the month is capped for good: it can never be set above MAX_EUR_PER_MONTH."""
     return UsageLedger(
         os.environ.get("SOUNDPITCH_USAGE_DB") or DEFAULT_USAGE_DB,
         per_minute=_whole_from_env("SOUNDPITCH_LLM_CALLS_PER_MINUTE", DEFAULT_CALLS_PER_MINUTE),

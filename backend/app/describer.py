@@ -118,7 +118,7 @@ LEX: dict[str, dict] = {
             "fino all'ultimo terzo",
         ],
         "t": {
-            "kickoff": [("Calcio d'inizio. {team} danno il via, attaccano {dir}.", "Calcio d'inizio.")],
+            "kickoff": [("Calcio d'inizio. {team} dà il via, attacca {dir}.", "Calcio d'inizio.")],
             "goal": [
                 ("Gol! {p} segna per {team}. {home} {hs}, {away} {as_}.", "Gol! {p} segna per {team}."),
                 ("Rete! {p} trova il gol per {team}. {home} {hs}, {away} {as_}.", "Rete! {p} segna."),
@@ -150,12 +150,12 @@ LEX: dict[str, dict] = {
             "foul": [("Fallo di {p}, {team}.", "Fallo, {team}.")],
             "throw_in": [("Rimessa laterale per {team} {side}.", "Rimessa, {team}.")],
             "turnover": [
-                ("{p} del {team} recupera palla {zone}.", "{p} recupera palla."),
-                ("{team} riconquistano il possesso {zone}, con {p}.", "{team} recuperano."),
+                ("{p} recupera palla per {team} {zone}.", "{p} recupera palla."),
+                ("{team} riconquista il possesso {zone}, con {p}.", "{team} riconquista."),
             ],
             "buildup": [
-                ("{team} costruiscono {lane_down}: {chain}, {zone}.", "{team} avanzano {lane_down}."),
-                ("{team} manovrano {lane_down} con {chain}, {zone}.", "{team} avanzano."),
+                ("{team} costruisce {lane_down}: {chain}, {zone}.", "{team} avanza {lane_down}."),
+                ("{team} manovra {lane_down} con {chain}, {zone}.", "{team} avanza."),
             ],
             "score_update": [("Minuto {m}. {home} {hs}, {away} {as_}.", "{home} {hs}, {away} {as_}.")],
         },
