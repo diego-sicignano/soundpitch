@@ -152,6 +152,10 @@ az group delete --name rg-soundpitch-demo --yes
 
 **Acceptance (G5).** `python -m app.smoke` on the public address: `ok`. A read-only script checked: `/api/health` (`replay`, 26 replies), the page without a login, the security headers and the policy, no inline handler, five presets, goal 1 in English (attempt 1) and Italian (attempt 2, per D20) with every must-say moment scheduled and no fallback, `/api/cuesheet` and its schema, WebVTT, `/api/voice` (no stored clips, not live), `POST /api/tts` with unissued text answering `403`, and an unknown preset answering `404`. The first request to the new app took 16.8 s (cold start); later ones about 0.1 s. The page flow (play, transcript, captions, ball sound) is covered by the end-to-end suite that ran in CI against the same code; it was not driven in a browser against the public address.
 
+**Forwarded header.** The console log stream (readable with `az containerapp logs show --type console` even with no logging destination) showed two shapes of `X-Forwarded-For` on the first requests: one address, and two addresses separated by a comma. `SOUNDPITCH_LOG_FORWARDED` was then removed (a new revision, `soundpitch--0000001`; smoke `ok` again, no cold start). The per-client voice limit takes the last entry (D14); it matters only when Speech is live, which it is not, and `POST /api/tts` answers `403` or `501` before any limit counts.
+
+**Idle behaviour.** After about ten minutes without a request the app had 0 replicas; the next request answered `200` in 11.3 s (the first one, 16.8 s).
+
 **Cost gate.** G6 step 1 done: the environment has no workload profile (`workloadProfiles: null`, no Dedicated or Flexible plan), no private endpoint and no maintenance window. Steps 2 to 4 (Cost Management after 8 to 48 hours, any `Environment` meter above 0 means delete the environment and use the fallback, and once more before 10 Nov) are **pending**.
 
 ## Fallbacks
