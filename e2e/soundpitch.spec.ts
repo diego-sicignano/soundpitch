@@ -30,7 +30,7 @@ test("S8: play fills the transcript in order, draws the timeline and ends on the
   await playToEnd(page);
   const items = page.locator('[data-testid^="transcript-cue-"]');
   await expect(items).toHaveCount(session.cues.length);
-  const texts = await items.locator("span:nth-child(2)").allTextContents();
+  const texts = await items.locator(".cue-text").allTextContents();
   expect(texts).toEqual(session.cues.map((c: { text: string }) => c.text));
   await expect(page.getByTestId("transcript")).toContainText(/Goal!|It's in!/);
   await expect(page.getByTestId("scoreline")).toHaveText("Northgate 1 – 0 Harbour");
@@ -50,7 +50,7 @@ test("captions follow the voice and can be switched off", async ({ page }) => {
   await ready(page);
   await page.getByTestId("play").click();
   await expect(page.getByTestId("captions")).not.toBeEmpty({ timeout: 10_000 });
-  const lastCue = await page.locator('[data-testid^="transcript-cue-"] span:nth-child(2)').last().textContent();
+  const lastCue = await page.locator('[data-testid^="transcript-cue-"] .cue-text').last().textContent();
   expect(lastCue).toContain((await page.getByTestId("captions").textContent())!.slice(0, 10));
   await page.getByTestId("toggle-captions").uncheck();
   await expect(page.getByTestId("captions")).toBeEmpty();
@@ -62,7 +62,7 @@ test("S8: the screen reader output writes into the aria-live region", async ({ p
   await expect(page.getByTestId("status")).toContainText("Ready");
   await expect(page.getByTestId("live-region")).toHaveAttribute("aria-live", "polite");
   await playToEnd(page);
-  const spoken = await page.locator('[data-testid^="transcript-cue-"] span:nth-child(2)').allTextContents();
+  const spoken = await page.locator('[data-testid^="transcript-cue-"] .cue-text').allTextContents();
   const live = (await page.getByTestId("live-region").textContent()) ?? "";
   expect(live).not.toBe("");
   expect(spoken).toContain(live);
@@ -105,6 +105,24 @@ test("S23: the commentary is marked with its own language, so a screen reader us
   await expect(page.getByTestId("status")).toContainText("Ready");
   expect(await lang("transcript")).toBe("en");
   expect(await lang("captions")).toBe("en");
+});
+
+test("S31: the sentence on what the score now means is shown apart from the description, in both languages", async ({ page }) => {
+  await ready(page, "/?speed=40&speech=off&preset=goal_2");
+  await playToEnd(page);
+  const context = page.locator('[data-testid^="transcript-context-"]');
+  await expect(context).toHaveCount(1);
+  await expect(context).toHaveText("That makes it level.");
+  const item = page.locator('[data-testid^="transcript-cue-"]').filter({ has: context });
+  await expect(item.locator(".cue-text")).toHaveText(/ That makes it level\.$/);
+  await expect(item.locator(".badge").first()).toHaveText("checked");
+  await expect(item.locator(".context-badge")).toHaveText("score context");
+  await expect(item.locator(".context-badge")).toHaveAttribute("lang", "en");
+  await page.getByTestId("lang").selectOption("it");
+  await expect(page.getByTestId("status")).toContainText("Ready");
+  await playToEnd(page);
+  await expect(page.locator('[data-testid^="transcript-context-"]')).toHaveText("Il risultato torna in parità.");
+  await expect(page.locator('[data-testid^="transcript-cue-"] .cue-text[lang="it"]').filter({ hasText: "parità" })).toHaveCount(1);
 });
 
 test("changing the detail level changes how much is described", async ({ page }) => {

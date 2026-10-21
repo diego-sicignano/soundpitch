@@ -26,6 +26,7 @@ class Candidate:
     description: Description
     status: str  # "verified" | "fallback"
     pan: float
+    context: str | None = None  # already the end of `description.full`; kept apart so a cue can say so (SPEC §5)
 
 
 def _find_slot(occupied: list[tuple[int, int]], earliest: int, duration: int) -> int:
@@ -77,6 +78,7 @@ def plan(
             status=c.status,  # type: ignore[arg-type]
             event_ids=c.moment.event_ids,
             pan=c.pan,
+            context=c.context if variant == "full" else None,
         )
         for n, (start, end, c, text, variant) in enumerate(placed, start=1)
     ]

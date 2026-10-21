@@ -129,6 +129,7 @@ class Cue(Contract):
     status: Literal["verified", "fallback"]
     event_ids: list[int]
     pan: float
+    context: str | None = None  # the code-written sentence that ends `text` (SPEC §5, Stakes); None when there is none
 
 
 EarconKind = Literal["tick", "turnover", "shot", "save", "goal", "set_piece", "whistle", "whistle_long"]
@@ -206,6 +207,7 @@ class _TimedText(Contract):
     event_ids: list[int]
     text: str
     status: Literal["verified", "fallback"]
+    context: str | None = None  # SPEC §13: the code-written sentence that ends `text`, if any
 
 
 class CueSheetDescription(_TimedText):

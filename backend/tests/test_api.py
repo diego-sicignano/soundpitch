@@ -152,15 +152,83 @@ def test_the_documentation_pages_keep_their_own_scripts_but_get_the_basic_header
 
 
 def test_an_unhandled_error_is_a_json_500_that_still_carries_the_security_headers(monkeypatch):
-    monkeypatch.setenv("SOUNDPITCH_LLM", "no-such-mode")
     from app import main
 
-    main._session.cache_clear()
-    try:
-        response = TestClient(app, raise_server_exceptions=False).get("/api/session")
-    finally:
-        main._session.cache_clear()
+    def boom(*args, **kwargs):
+        raise RuntimeError("secret-detail-that-must-not-leak")
+
+    monkeypatch.setattr(main, "_session", boom)
+    response = TestClient(app, raise_server_exceptions=False).get("/api/session")
     assert response.status_code == 500 and response.json()["code"] == "internal_error"
     assert response.headers["x-content-type-options"] == "nosniff"
     assert "default-src 'self'" in response.headers["content-security-policy"]
-    assert "no-such-mode" not in response.text  # the message names no setting and no value
+    assert "secret-detail-that-must-not-leak" not in response.text  # the message names no setting and no value
+
+
+MISTYPED = "Replay-mistyped-1234"  # a value that must never be echoed
+
+
+@pytest.mark.parametrize("path", ["/api/session", "/api/session.vtt", "/api/cuesheet"])
+def test_a_mistyped_llm_mode_is_a_clear_503_that_names_the_setting_and_not_its_value(monkeypatch, path):
+    from app import main
+
+    monkeypatch.setenv("SOUNDPITCH_LLM", MISTYPED)
+    main._session.cache_clear()
+    try:
+        response = client.get(path)
+    finally:
+        main._session.cache_clear()
+    assert response.status_code == 503 and response.json()["code"] == "llm_not_configured"
+    message = response.json()["message"]
+    assert "SOUNDPITCH_LLM" in message and "replay" in message and "scripted" in message  # what to use instead
+    assert MISTYPED not in response.text
+    assert response.headers["x-content-type-options"] == "nosniff"
+
+
+def test_health_fails_closed_on_a_mistyped_llm_mode_without_echoing_it(monkeypatch):
+    monkeypatch.setenv("SOUNDPITCH_LLM", MISTYPED)
+    response = client.get("/api/health")
+    assert response.status_code == 503 and response.json()["code"] == "llm_not_configured"
+    assert "SOUNDPITCH_LLM" in response.json()["message"] and MISTYPED not in response.text
+
+
+def test_a_mistyped_orchestrator_is_a_503_that_does_not_echo_its_value(monkeypatch):
+    from app import main
+
+    monkeypatch.setenv("SOUNDPITCH_ORCHESTRATOR", MISTYPED)
+    main._session.cache_clear()
+    try:
+        response = client.get("/api/session")
+    finally:
+        main._session.cache_clear()
+    assert response.status_code == 503 and response.json()["code"] == "llm_not_configured"
+    assert "SOUNDPITCH_ORCHESTRATOR" in response.json()["message"] and MISTYPED not in response.text
+
+
+def test_the_describer_setting_raises_the_configuration_error_not_a_bare_value_error(monkeypatch):
+    from app.foundry import FoundryNotConfigured
+    from app.pipeline import describer_from_env
+
+    monkeypatch.setenv("SOUNDPITCH_LLM", MISTYPED)
+    with pytest.raises(FoundryNotConfigured) as caught:
+        describer_from_env()
+    assert MISTYPED not in str(caught.value)
+
+
+@pytest.mark.parametrize("mode", ["scripted", "bad_then_good", "always_bad", "replay"])
+def test_every_supported_llm_mode_still_serves_a_session(monkeypatch, mode):
+    from app import main
+
+    monkeypatch.setenv("SOUNDPITCH_LLM", mode)
+    main._session.cache_clear()
+    try:
+        assert client.get("/api/session", params={"preset": "goal_1"}).status_code == 200
+        assert client.get("/api/health").json()["llm"] == mode
+    finally:
+        main._session.cache_clear()
+
+
+def test_the_page_declares_an_icon_so_the_browser_does_not_request_a_missing_favicon():
+    """No favicon.ico is served, and the content security policy allows `data:` images only: an inline icon keeps the
+    console free of a 404 for a judge who opens the developer tools."""
+    assert 'rel="icon"' in client.get("/").text

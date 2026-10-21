@@ -27,7 +27,7 @@ from app.contracts import (
 )
 from app.foundry import BUDGET_NOTE, FoundryNotConfigured
 from app.match_gen import SEED, generate_match
-from app.pipeline import build_presets, build_session, describer_from_env
+from app.pipeline import build_presets, build_session, describer_from_env, llm_mode
 from app.render import webvtt
 
 log = logging.getLogger("soundpitch.api")
@@ -92,7 +92,7 @@ def _builder(mode: str):
         )
 
         return workflow.build_session
-    raise FoundryNotConfigured(f"unknown SOUNDPITCH_ORCHESTRATOR: {mode} (use plain or workflow)")
+    raise FoundryNotConfigured("SOUNDPITCH_ORCHESTRATOR is not a supported mode (use plain or workflow)")  # never the value
 
 
 def _session(preset_id: str, profile: Profile) -> Session:
@@ -114,9 +114,12 @@ def _session(preset_id: str, profile: Profile) -> Session:
 _session.cache_clear = SESSIONS.clear  # type: ignore[attr-defined]
 
 
-@app.get("/api/health")
-def health() -> dict[str, str | int]:
-    mode = os.environ.get("SOUNDPITCH_LLM") or "scripted"
+@app.get("/api/health", response_model=None, responses={503: {"model": ErrorResponse}})
+def health() -> dict[str, str | int] | JSONResponse:
+    try:
+        mode = llm_mode()
+    except FoundryNotConfigured as exc:  # a mistyped setting is not healthy: fail closed, never echo the value
+        return _error(503, "llm_not_configured", str(exc))
     if mode == "replay":  # how many recorded model replies this server holds: 0 means the templates speak
         from app.replay import shared_replay
 

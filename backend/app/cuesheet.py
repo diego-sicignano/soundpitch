@@ -33,6 +33,7 @@ def build(session: Session, preset: Preset) -> CueSheet:
             "event_ids": cue.event_ids,
             "text": cue.text,
             "status": cue.status,
+            "context": cue.context,
         }
         items.append(CueSheetDescription(id=f"ad-{cue.id}", type="audio_description", **timing))
         items.append(CueSheetCaption(id=f"cap-{cue.id}", type="caption", **timing))
