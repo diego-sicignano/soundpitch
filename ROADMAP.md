@@ -38,7 +38,7 @@ Judging weights five criteria at 20% each and ties go to criterion 1 (technology
 |---|---|---|---|---|
 | T01 | [Register and confirm eligibility](docs/tickets/T01-register.md) | none | manual | **done** (registered, individual) |
 | T02a | [Grounded verifier](docs/tickets/T02a-grounded-verifier.md) | none | S3, S19, S20 | **done** |
-| T02b | [Foundry describer](docs/tickets/T02-foundry-describer.md) | T02a | S11, S12 | **done**: S11 offline, S12 live once on 2026-10-20; the model mostly copies the templates (D10) |
+| T02b | [Foundry describer](docs/tickets/T02-foundry-describer.md) | T02a | S11, S12 | **done**: S11 offline, S12 live on 2026-10-20 (two runs); the model mostly copies the templates (D10) |
 | T03 | [Agent Framework workflow](docs/tickets/T03-agent-framework-workflow.md) | T02b | S13 | **done**; S13 verified on Python 3.13 with the pinned packages |
 | T04 | [Azure AI Speech with a real key](docs/tickets/T04-azure-speech.md) | Azure resource, **owner's approval** | S14 | todo: the client and the clip tool exist and are tested against a stub; no Speech request has ever been sent and no clip exists (`docs/DEPLOY.md`, G3) |
 | T05 | [Cue sheet and JSON Schema](docs/tickets/T05-cue-sheet.md) | none | S15 | **done** |
