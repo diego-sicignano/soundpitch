@@ -21,7 +21,7 @@
 | The adapter against the real SDK types, network stubbed (`backend/tests/test_foundry_sdk.py`) | done in the Python 3.13 environment with `requirements-agents.txt`; skipped in the core environment |
 | `backend/app/foundry.py`, wiring in `pipeline.py` and `main.py`, `requirements-agents.txt` | done |
 | `python -m app.foundry_run` and its tests | done |
-| **S12, a real request against a Foundry deployment** | **done 2026-10-20**: `docs/evidence/foundry-run.md` (26 calls, 81 of 81 moments verified at attempt 1 in each language, median 2.7 s). The model copies the templates in 98.8% (en) and 84.0% (it) of cues; see D10. The cost hardening of 2026-10-20 (D11, S21) came after this run |
+| **S12, a real request against a Foundry deployment** | **done 2026-10-20**: `docs/evidence/foundry-run.md` (26 calls, 81 of 81 moments verified at attempt 1 in each language, median 3.31 s, p95 4.52 s). The model copies the templates in 98.8% (en) and 84.0% (it) of cues; see D10. The cost hardening of 2026-10-20 (D11, S21) came after this run |
 
 ## Independent review of the failure paths
 

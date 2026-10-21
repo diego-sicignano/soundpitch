@@ -4,7 +4,7 @@ Status: a draft. Replace every `[confirm]` before submitting, and delete any tec
 
 ## One sentence
 
-SoundPitch lets a blind or low-vision fan follow a football match by ear: a timed audio description, a ball sound that moves left and right with the play, and captions, with every description checked against the match events before it is spoken.
+SoundPitch lets a blind or low-vision fan follow a football match by ear: a timed audio description, a ball sound that moves left and right with the play, and captions, with every description checked against the match events before it is spoken (the score summary after a goal or a whistle is computed from the score by code).
 
 ## Pitch (about 150 words)
 

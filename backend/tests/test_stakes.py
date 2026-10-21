@@ -227,3 +227,11 @@ def test_the_italian_phrases_use_the_singular_with_a_club_name():
     for plural in ("passano", "allungano", "aumentano", "accorciano", "vincono"):
         assert plural not in italian
     assert "{team}" in PHRASES["it"]["lead"] and PHRASES["it"]["lead"].startswith("{team} passa ")
+
+
+def test_the_page_does_not_say_the_score_context_is_checked_against_the_events():
+    """The context sentence is appended after the verifier, so the page's own claim must not cover it (S31)."""
+    page = (main.FRONTEND / "index.html").read_text(encoding="utf-8")
+    claim = page.split('class="tagline"')[1].split("</p>")[0]
+    assert "checked against the match events" in claim
+    assert "worked out by code from the score" in claim  # the claim names what the verifier does not cover
