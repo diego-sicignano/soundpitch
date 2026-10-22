@@ -22,7 +22,7 @@ Deadlines are in [`SUMMARY.md`](SUMMARY.md). Registration closed **20 Oct 2026, 
 - [x] Replay file committed; the owner reviewed the Italian sentences the model wrote, one is kept as recorded and documented.
 - [x] **Microsoft Agent Framework** workflow for describer, verifier, fallback, timing (T03).
 - [ ] **Azure AI Speech** voice tested with a real key (T04, needs a pricing-tier decision).
-- [ ] **Azure Container Apps** hosting (T06): deployed and verified on 2026-10-21, then deleted the same day to stop costs; redeploy before submitting (`docs/DEPLOY.md`, "Teardown and redeploy").
+- [ ] Optional: **Azure Container Apps** hosting (T06): deployed and verified once on 2026-10-21, then deleted to stop costs; redeploying needs approval (D26, `docs/DEPLOY.md`).
 - [ ] Optional: **MCP** server exposing the match tools (T08).
 
 ## Public repository
@@ -37,11 +37,11 @@ Deadlines are in [`SUMMARY.md`](SUMMARY.md). Registration closed **20 Oct 2026, 
 
 ## Judges' access (4.8)
 
-- [ ] Public URL works without login, free of charge, **until at least 10 Nov 2026, 23:59 Pacific (11 Nov, 08:59 in Italy)**. It worked on 2026-10-21 and is **offline now**; redeploy from the public image (`docs/DEPLOY.md`), put the new address in the README, the pitch and the video, and run the cost check (G6) the next day.
+- [ ] The working project is reachable free of charge and without restriction **until 10 Nov 2026, 23:59 Pacific (11 Nov, 08:59 in Italy)** (§4.8: a website, a functioning demo or a test build). Today: the public tested image, Codespaces and a clone, with instructions in the README. A hosted URL is optional and needs approval (D26); if one is made, put it in the README, the pitch and the video.
 - [x] The judges' path makes no model call and has no daily quota (replay mode, D12).
-- [x] Budget alert on the Azure subscription (5 EUR, e-mail only). No Speech is enabled. The demo resource group was deleted on 2026-10-21, so nothing is accruing.
-- [ ] Testing instructions in the README ("For judges": which preset to press, expected result), with the URL: the steps are there; the URL goes in after the redeploy.
-- [ ] Fallback if the live demo is down: the video and the README still show everything.
+- [x] Budget alert on the Azure subscription (5 EUR, e-mail only). No Speech is enabled. The demo resource group was deleted on 2026-10-21, so no hosting cost is accruing.
+- [x] Testing instructions in the README ("For judges": the `docker run` line, which preset to press, the expected result).
+- [ ] If a hosted copy is made and goes down, the test build, the video and the README still show everything.
 
 ## Video (4.4)
 

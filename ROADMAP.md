@@ -42,12 +42,12 @@ Judging weights five criteria at 20% each and ties go to criterion 1 (technology
 | T03 | [Agent Framework workflow](docs/tickets/T03-agent-framework-workflow.md) | T02b | S13 | **done**; S13 verified on Python 3.13 with the pinned packages |
 | T04 | [Azure AI Speech with a real key](docs/tickets/T04-azure-speech.md) | Azure resource, **owner's approval** | S14 | todo: the client and the clip tool exist and are tested against a stub; no Speech request has ever been sent and no clip exists (`docs/DEPLOY.md`, G3) |
 | T05 | [Cue sheet and JSON Schema](docs/tickets/T05-cue-sheet.md) | none | S15 | **done** |
-| T06 | [Deploy to Azure Container Apps](docs/tickets/T06-deploy.md) | T11, T04 optional, **owner's approval** | S16 | deployed and verified 2026-10-21, **deleted the same day to stop costs**: redeploy before the video and the submission (`docs/DEPLOY.md`); no Speech clips (T04 todo) |
+| T06 | [Deploy to Azure Container Apps](docs/tickets/T06-deploy.md) | T11, T04 optional, **owner's approval** | S16 | deployed and verified once on 2026-10-21, **deleted to stop costs**; optional now (D26): the public image is the test build rule 4.8 accepts (`docs/DEPLOY.md`); no Speech clips (T04 todo) |
 | T11 | [Record the replay file](docs/tickets/T11-record-replay.md) | T02b, prompt frozen, **owner's approval** (model calls) | S24 | **done**: recorded 2026-10-20, 26 replies, 30 of 30 windows, about 0.03 USD; the owner reviewed the Italian wording, one sentence is kept as recorded and documented |
 | T07 | [Demo video and pitch](docs/tickets/T07-video-and-pitch.md) | T11, T06 | checklist | todo |
 | T08 | [MCP server (optional)](docs/tickets/T08-mcp-server.md) | T03 | S17 | todo, optional |
 | T09 | [Player focus (optional)](docs/tickets/T09-player-focus.md) | none | S18 | todo, optional |
-| T10 | [Make the repository public and submit](docs/tickets/T10-publish-and-submit.md) | all shown | checklist | in progress: repository public and CI green (2026-10-21); left: redeploy the demo, video, form, cost check |
+| T10 | [Make the repository public and submit](docs/tickets/T10-publish-and-submit.md) | all shown | checklist | in progress: repository public and CI green (2026-10-21); left: video, form, and the decision on a hosted copy (D26) |
 
 Status values: `todo`, `in progress`, `done`. Change the row in the same commit that finishes the ticket.
 
@@ -55,10 +55,10 @@ Status values: `todo`, `in progress`, `done`. Change the row in the same commit 
 
 | Day | Work |
 |---|---|
-| 20 Oct (today) | Registered. Audit, hygiene, TTS guard, language marking, replay, cue sheet, workflow, Dockerfile, smoke check, documentation |
+| 20 Oct | Registered. Audit, hygiene, TTS guard, language marking, replay, cue sheet, workflow, Dockerfile, smoke check, documentation |
 | 21 Oct | Review and commit; start Docker Desktop and build the image; freeze the prompt; **T11** (approval) |
-| 22 Oct | **T06** deploy (approval), **T04** if a Speech tier is chosen |
-| 23 Oct | Rehearse the demo; fix what the deployed URL shows |
+| 22 Oct | Audit and polish pass (D26); decide on a hosted copy (**T06**, approval) and on **T04** |
+| 23 Oct | Rehearse the demo against the image or the hosted copy |
 | 24 to 25 Oct | **T07** video and pitch; T08 and T09 only if there is time |
 | 26 Oct | **T10**: public repository, first CI run, submit (the history was prepared locally on 21 Oct, D22: noreply address, no copy of the rules; repeat the scan after any later commit) |
 | 27 Oct | Buffer. Do not change the deployment while judging runs |
