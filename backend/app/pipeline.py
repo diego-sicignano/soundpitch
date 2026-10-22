@@ -250,7 +250,8 @@ def assemble_session(
         )
     )
 
-    duration_ms = (preset.to_s - preset.from_s) * 1000
+    # the window, or the end of the last cue when it runs past it (the full-time sentence always does, SPEC §6)
+    duration_ms = max((preset.to_s - preset.from_s) * 1000, max((c.end_ms for c in cues), default=0))
     speech_ms = sum(c.end_ms - c.start_ms for c in cues)
     by_priority = {
         str(p): {

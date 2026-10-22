@@ -77,6 +77,7 @@ A goal, the half-time whistle and the final whistle carry a **context sentence**
 - A cue may start no earlier than its moment time plus 300 ms, and not later than moment time plus the **max lag**: priority 3 → 10 s, 2 → 6 s, 1 → 5 s, 0 → 4 s.
 - Cues never overlap; gap between cues at least 250 ms.
 - Planning order: priority high to low, then time. For each moment try `full`, then `short`; if neither fits it is **dropped** with a reason. Priority 3 is never dropped: it takes the first free gap after its earliest start, even past the max lag.
+- The session's `duration_ms` is the preset window, extended to the end of the last cue when a cue runs past it. The full-time whistle is the last event of its window, so its sentence always does: without the extension the player would stop before it is spoken. Every cue therefore starts and ends inside `duration_ms`, and no cue is counted that the player would not play.
 - The result is deterministic.
 
 ## §7 Earcons (ball sound) and calm mode
@@ -137,7 +138,7 @@ Landmarks `header`, `main`, skip link. All controls are real labelled form eleme
 | `report-summary` | one plain sentence above `report` that says how many descriptions passed the check as written and how many a template replaced (derived from the same figures) |
 | `status` | `role="status"` line: loading, ready, playing, paused, finished, errors |
 
-Layout: on a wide screen the listening settings sit beside the pitch and timeline; on a narrow one every panel stacks, a transcript line shows its time and badges above its text, and the report tiles stay two to a row. No content may need horizontal scrolling at 320 px.
+Layout: on a wide screen the listening settings sit beside the pitch and timeline; on a narrow one every panel stacks, a transcript line shows its time and badges above its text, and the report tiles sit two to a row from about 360 px wide (one to a row below that). No content may need horizontal scrolling at 320 px.
 
 Query parameters for automation: `preset` (initial window, default `goal_1`), `speed` (clock multiplier, default 1), `speech=off`.
 
@@ -149,7 +150,7 @@ Query parameters for automation: `preset` (initial window, default `goal_1`), `s
 | **S2** | the match | every priority-3 kind is a moment at every detail level; `essential` ⊂ `standard` ⊂ `full`; build-ups are runs of one team's pass-like events |
 | **S3** | the verifier | accepts template text; rejects a wrong ref, empty or altered refs, a wrong `moment_id` or `lang`, a foreign player name, a stray number, an over-long text |
 | **S4** | scenarios | `bad_then_good`: every cue verified after one retry; `always_bad`: failing moments use the fallback, cues are marked `fallback`, track is complete |
-| **S5** | the planner | no overlaps, gaps ≥ 250 ms, all priority-3 moments scheduled, high priority never dropped for low, `short` used when `full` does not fit, deterministic |
+| **S5** | the planner | no overlaps, gaps ≥ 250 ms, all priority-3 moments scheduled, high priority never dropped for low, `short` used when `full` does not fit, every cue ends inside `duration_ms`, deterministic |
 | **S6** | profiles | cue count `essential` < `standard` < `full` on one window; `it` text with the same event ids as `en`; calm mode keeps only goal and whistle earcons; pan sign follows `x` |
 | **S7** | the API | valid `Session`; `404` for an unknown preset; WebVTT well-formed; `/api/tts` `501` unconfigured and audio bytes with a stubbed Azure |
 | **S8** | the page | pressing `play` fills `transcript` in order and `timeline` with one block per cue; captions toggle; `screenreader` output writes into `live-region`; `Space` toggles play |

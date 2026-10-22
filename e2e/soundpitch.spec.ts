@@ -37,6 +37,20 @@ test("S8: play fills the transcript in order, draws the timeline and ends on the
   await expect(page.getByTestId("play")).toHaveText("Play again");
 });
 
+test("the final whistle window plays on until the full-time sentence has been spoken", async ({ page }) => {
+  // The sentence starts 0.3 s after the last event of its window. A slower clock than the other tests (speed 8, so a
+  // frame is about 0.13 s) is needed: at speed 40 one frame jumps past the window end and hides the fault.
+  await ready(page, "/?speed=8&speech=off&preset=final_whistle");
+  const session = await (await page.request.get("/api/session?preset=final_whistle")).json();
+  await page.getByTestId("play").click();
+  await expect(page.getByTestId("status")).toHaveText("The clip has finished.", { timeout: 20_000 });
+  const texts = await page.locator("#transcript .cue-text").allTextContents();
+  expect(texts).toEqual(session.cues.map((c: { text: string }) => c.text));
+  await expect(page.getByTestId("transcript")).toContainText("Full-time. Northgate 2, Harbour 1.");
+  await expect(page.getByTestId("transcript")).toContainText("Northgate win.");
+  await expect(page.getByTestId("scoreline")).toHaveText("Northgate 2 – 1 Harbour");
+});
+
 test("the report shows how the commentary was checked", async ({ page }) => {
   await ready(page);
   const report = page.getByTestId("report");
