@@ -1,25 +1,75 @@
-# Demo video script (under 2 minutes)
+# Demo video plan (under 2 minutes)
 
-Rules 4.4: under two minutes, a public URL, the project running on its platform (a browser), no third-party trademarks, no music you lack rights to. Judges need not watch past two minutes, so the best moment goes first. Target: about 110 seconds. Ticket: [T07](../tickets/T07-video-and-pitch.md).
+Rule 4.4: the video must be **under two minutes**, show the project running on its intended device and platform (a browser), carry a **public URL on YouTube, Vimeo, Facebook Video or Youku** (entered on the project page of the hackathon website), and contain no third-party trademark and no music you lack rights to. Rule 4.9: everything in English or with an English translation. Judges may stop watching at two minutes, so the goal comes first. Target **about 1:50, hard limit 1:58**. Ticket: [T07](../tickets/T07-video-and-pitch.md).
 
-Before recording: use headphones for stereo, open the demo URL in Chrome (the demo is offline until it is redeployed, `docs/DEPLOY.md`; wake it with one request first, a cold start takes 10 to 17 s; the video must show the public URL, rules 4.4), set the zoom to 125%, close other tabs, mute notifications. Start a second server with `SOUNDPITCH_LLM=always_bad` for the sabotage scene.
+The app is recorded **locally, in replay mode**, the way the judges' image runs it. The rules ask for a link for the video only; no hosted URL is needed (D26). If a hosted copy exists by then, show its address on the last card.
 
-| Time | On screen | Voice-over (English) |
+## Facts the plan rests on
+
+Checked on 2026-10-22 against the running replay server (`SOUNDPITCH_LLM=replay`, 26 recorded replies) and the `always_bad` test server. Times are seconds from the start of the window.
+
+| Fact | Value |
+|---|---|
+| Goal 1 window, standard detail, English | **135 s in real time**, 10 cues, all verified at attempt 1, 0 fallbacks; speech 39 s, silence 96 s |
+| The goal cue | starts at **100.3 s**: "Goal! Marsh scores for Northgate, set up by Adeyemi. Northgate 1, Harbour 0. The opening goal of the match." (the last sentence is written by code from the score) |
+| Lines before it | 10.3 build down the right; 15.3 "Reyes shoots from the right, on target."; 18.4 "Petrov makes the save."; 24.3; 53.3 Harbour build down the left; 60.3 throw-in; 63.3; 76.3 |
+| Ball sound pan | right at 10 to 34 s (+0.92 to +0.76); sweeps to the left 37 to 60 s (-0.24 to -0.76); back to the right 63 to 79 s (-0.10 to +0.64); the goal sound at 100 s is +0.92 |
+| `always_bad` test server, goal 1 | 0 of 10 verified, 10 template fallbacks, 3 attempts; trace: "verifier 1 failed, 10 of 10 rejected: Brandt is not in this moment", the same at attempts 2 and 3, then "template fallback for 10"; page sentence: "0 of 10 descriptions passed the check as written; 10 were replaced by a template that always passes."; goal cue: "It's in! Marsh finishes for Northgate, set up by Adeyemi. Northgate 1, Harbour 0. The opening goal of the match." |
+| Recorded replay, goal 1, English | report sentence: "All 10 descriptions passed the check as written." |
+| Italian goal cue | "Gol! Marsh segna per Northgate, assist di Adeyemi. Northgate 1, Harbour 0. È il primo gol della partita." The Italian sessions report **2 attempts** (D20): do not open the Italian report |
+| Cue sheet | `/api/cuesheet?preset=goal_1`, versioned, with a JSON Schema |
+
+Not verified here: how the sounds and the browser voice **sound** (this environment has no audio device), and the Italian voice (it depends on the voices installed on the recording computer). Listen to a rehearsal before recording.
+
+## The 135-second problem
+
+A real-time run of goal 1 is longer than the whole video, and 70% of it is silence by design. Do **not** use `?speed=`: it speeds the clock but not the browser voice, so lines would queue and the sounds would crowd. Record **one real-time take** (headphones on, system audio captured in stereo), then **cut** to the moments below and say so on screen ("Edited: silent stretches removed") for the first cut. The page's own clock and timeline stay honest because every cut lands on a cue.
+
+## Scenes
+
+| Time | On screen (source) | Voice-over (your own voice) |
 |---|---|---|
-| 0:00 to 0:10 | Black, then the page title. Captions on. | "For a blind fan, football commentary assumes you can see the pitch. SoundPitch describes the match instead." |
-| 0:10 to 0:35 | Choose "Goal 1: Northgate, minute 16", press Play. Let the voice and the ball sound run; the ball moves on the pitch. | (silence for a few seconds so the audio is heard) then: "It speaks like a radio commentator, and a sound moves across your headphones with the ball." |
-| 0:35 to 0:55 | The goal is announced; captions show it; the scoreline changes. | "When the goal comes, you hear who scored, the score, and what it means: here, the opening goal of the match." |
-| 0:55 to 1:10 | Point to the timeline: speech blocks, gaps, the yellow must-say block. | "Speech is planned into the gaps. A goal is never pushed out by routine play." |
-| 1:10 to 1:35 | Second page on the `always_bad` server. Open the report: "Template fallback", attempts 3. Open "Pipeline steps". Transcript badges say "template". | "Every name, team and score in a described sentence is checked against the match events before it is spoken; the score summary after a goal is computed by code. Here a deliberately faulty test describer keeps naming the wrong player. The verifier rejects it three times and a verified template takes over. The listener never hears a wrong name." |
-| 1:35 to 1:48 | Switch to Italian, then calm mode, then "My own screen reader". | "Italian or English, a calm mode, large captions, or plain text for your own screen reader." |
-| 1:48 to 1:55 | Title card with the URL and the technologies. | "Model words recorded from Microsoft Foundry through the Microsoft Agent Framework, checked again by code on every request." On the title card: the demo URL, and "Microsoft Foundry, Microsoft Agent Framework". Say "open source": the repository is public. Add "hosted on Azure Container Apps" only while the redeployed demo is up. Add Azure AI Speech only if `docs/DEPLOY.md` G3 is done (it is not). |
+| **0:00 to 0:12** | Page at "Goal 1: Northgate, minute 16", score 0 - 0, captions on. Press **Space**. Hard cut to take 100.3 to 107.5 s: the goal sentence is heard and shown in large captions; the score changes to 1 - 0; the yellow goal block on the timeline. | Silent while the goal sentence plays. At about 0:09: "That is a goal, heard by someone who cannot see the pitch." |
+| **0:12 to 0:27** | Full page, scroll slowly past the pitch and the timeline. | "Football commentary assumes you can see. SoundPitch describes the match instead: a voice, a ball sound that moves across your headphones, and captions for deaf and hard-of-hearing fans. The match is synthetic: Northgate Red against Harbour Blue." |
+| **0:27 to 0:50** | Take 10.3 to 20.1 s (build down the right, the shot, the save), then cut to 53.3 to 66.5 s (Harbour build down the left, throw-in). Ball moves on the pitch, the playhead moves over the timeline. | During the gaps only: "Each line is planned into the silence between plays, left for the crowd and the ball sound." / "The sound pans with the ball and rises in pitch towards the goal." Let the voice lines play alone. |
+| **0:50 to 1:18** | Second browser window, `always_bad` server, goal 1. Press play for a few seconds, then scroll to **How it was checked**: "0 of 10 descriptions passed the check as written; 10 were replaced by a template that always passes." Open **Pipeline steps**: three lines "Brandt is not in this moment", then "template fallback". Transcript badges say "template". Cut back to the recorded window: "All 10 descriptions passed the check as written." | "Every name, team and score in a sentence is checked against the match events before anyone hears it. Here a deliberately faulty test describer keeps naming a player who is not in the moment. The check rejects it three times, then a template that always passes speaks. So a listener never hears a name or a score that is not in the match events." |
+| **1:18 to 1:36** | Back on the main server. Switch the language to **Italiano**, press play, show the Italian caption and transcript only (no report). Tick **Calm mode**. Choose **My own screen reader (text only)** and show a line appear. Change **How much to describe** once. | "English or Italian, three levels of detail, a calm mode, large captions, or plain text for your own screen reader. Everything works from the keyboard." |
+| **1:36 to 1:52** | Browser tab on `/api/cuesheet?preset=goal_1` (JSON on screen), then the closing card (text only, no logos): "SoundPitch. Microsoft Foundry words, recorded and re-checked by code on every request. Microsoft Agent Framework workflow. Open source, MIT. Synthetic data." | "It is also a versioned cue sheet for captioning systems. The words come from Microsoft Foundry, recorded in advance and checked again by code. Open source." |
 
-Checklist after recording:
+Word count of the quoted voice-over: about 190 words, no scene above 150 words a minute (the scenes are paced so that each fits its seconds), and the goal, the voice lines and the silences carry the rest. Add captions to the video itself (T07 step 3): this project is about accessibility.
 
-- [ ] Under 2:00 and plays signed out on the public URL.
-- [ ] The ball sound is audible and clearly moves left to right.
-- [ ] No Premier League or Microsoft logos, no music.
-- [ ] Captions added to the video itself.
-- [ ] Every technology in the last line is true (see the table in `PITCH.md`), and "open source" is said only if the repository is public (T10).
-- [ ] The Italian scene does not open the report or say "first attempt": since D20 the Italian demo sessions report 2 attempts (the corrected templates replaced recorded sentences with the old wording).
-- [ ] The sabotage scene says it is a test describer (`SOUNDPITCH_LLM=always_bad`), not the recorded Foundry model, which passed the verifier at the first attempt in the recorded run (`docs/evidence/foundry-run.md`).
+## Say only what is true
+
+| Claim | Basis |
+|---|---|
+| Every name, team and score is checked against the match events | the verifier, S4 and S20, `docs/evaluation.md` |
+| Foundry wrote the words, recorded in advance, no model call while it runs | `docs/evidence/foundry-run.md`, `SOUNDPITCH_LLM=replay` |
+| The Agent Framework workflow exists | `workflow.py`, CI job `sdk`; the demo does **not** run it (`SOUNDPITCH_ORCHESTRATOR=plain`), so say "workflow", not "agents" |
+| The goal sentence ends with what the score means, written by code | S31; the page marks it "score context" |
+
+## Do not say or show
+
+- Azure AI Speech, Azure Container Apps, MCP, or "hosted on Azure": none is in use now (a hosted copy was deployed once and deleted).
+- That blind or low-vision people tested it: nobody has.
+- That the model writes its own commentary: it mostly repeats the template wording (`docs/evidence/foundry-run.md`). Say "words recorded from Foundry, checked by code".
+- That the verifier proves a sentence is true or good: it proves where names, numbers and words come from, not meaning (README, "Honest limits").
+- "First attempt" or the report for Italian (D20), a Premier League or Microsoft logo, real players or clubs, music.
+- That the `always_bad` scene is the real model: it is a test describer, and say so.
+
+## Before recording
+
+- Windows 11, Chrome or Edge at 125% zoom, other tabs closed, notifications off, headphones on. Record system audio in **stereo**, your voice on a separate track.
+- Start two servers from `backend`: `SOUNDPITCH_LLM=replay` on port 8000 and `SOUNDPITCH_LLM=always_bad` on port 8001.
+- Check that the browser has a voice for each language (the page says when it has none). If there is no Italian voice, show Italian captions only and say nothing about Italian speech.
+- Rehearse once with sound; set the cut points from the cue times in the table above.
+
+## After recording
+
+- [ ] Under 2:00, plays signed out on the public URL (YouTube or Vimeo), listed on the project page of the hackathon website.
+- [ ] The ball sound is audible and clearly pans in headphones.
+- [ ] The first 12 seconds are the goal.
+- [ ] No Premier League or Microsoft logo, no music, no real player or club.
+- [ ] Captions burned in or uploaded; English throughout.
+- [ ] Every technology on the closing card is true (table in `PITCH.md`).
+- [ ] The sabotage scene says it is a test describer.
+- [ ] The video URL is in the README and the pitch.
