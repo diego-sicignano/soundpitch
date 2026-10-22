@@ -37,6 +37,20 @@ test("S8: play fills the transcript in order, draws the timeline and ends on the
   await expect(page.getByTestId("play")).toHaveText("Play again");
 });
 
+test("the final whistle window plays on until the full-time sentence has been spoken", async ({ page }) => {
+  // The sentence starts 0.3 s after the last event of its window. A slower clock than the other tests (speed 8, so a
+  // frame is about 0.13 s) is needed: at speed 40 one frame jumps past the window end and hides the fault.
+  await ready(page, "/?speed=8&speech=off&preset=final_whistle");
+  const session = await (await page.request.get("/api/session?preset=final_whistle")).json();
+  await page.getByTestId("play").click();
+  await expect(page.getByTestId("status")).toHaveText("The clip has finished.", { timeout: 20_000 });
+  const texts = await page.locator("#transcript .cue-text").allTextContents();
+  expect(texts).toEqual(session.cues.map((c: { text: string }) => c.text));
+  await expect(page.getByTestId("transcript")).toContainText("Full-time. Northgate 2, Harbour 1.");
+  await expect(page.getByTestId("transcript")).toContainText("Northgate win.");
+  await expect(page.getByTestId("scoreline")).toHaveText("Northgate 2 – 1 Harbour");
+});
+
 test("the report shows how the commentary was checked", async ({ page }) => {
   await ready(page);
   const report = page.getByTestId("report");
@@ -44,6 +58,26 @@ test("the report shows how the commentary was checked", async ({ page }) => {
   await expect(report).toContainText("Overlaps");
   await expect(report.locator("div", { hasText: "Overlaps" }).locator("dd")).toHaveText("0");
   await expect(report.locator("div", { hasText: "Template fallback" }).locator("dd")).toHaveText("0");
+  await expect(page.getByTestId("report-summary")).toHaveText(/^All \d+ descriptions? passed the check as written\.$/);
+});
+
+test("the page does not scroll sideways on a phone", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 700 });
+  await ready(page);
+  await playToEnd(page);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+  const text = await page.locator("#transcript .cue-text").first().boundingBox();
+  expect(text!.width).toBeGreaterThan(200); // the text keeps most of the line; it is not squeezed beside the time and badges
+});
+
+test("a failed reload leaves nothing to play from the old settings", async ({ page }) => {
+  await ready(page);
+  await page.route("**/api/session?*", (route) => route.fulfill({ status: 500, body: "{}" }));
+  await page.getByTestId("lang").selectOption("it");
+  await expect(page.getByTestId("status")).toHaveText("The commentary could not be prepared.");
+  await page.getByTestId("play").click();
+  await expect(page.getByTestId("status")).toHaveText("The commentary could not be prepared.");
+  await expect(page.getByTestId("play")).toHaveText("Play");
 });
 
 test("captions follow the voice and can be switched off", async ({ page }) => {
@@ -317,6 +351,7 @@ test.describe("when the language model keeps getting it wrong", () => {
     await expect(report.locator("div", { hasText: "Verified" }).first().locator("dd")).toHaveText("0");
     await expect(report.locator("div", { hasText: "Attempts" }).locator("dd")).toHaveText("3");
     await expect(report.locator("div", { hasText: "Template fallback" }).locator("dd")).not.toHaveText("0");
+    await expect(page.getByTestId("report-summary")).toContainText("replaced by a template that always passes");
     await page.getByText("Pipeline steps").click();
     await expect(page.locator("#trace li", { hasText: "verifier, attempt 3: failed" })).toHaveCount(1);
     await playToEnd(page);

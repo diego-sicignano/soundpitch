@@ -29,14 +29,14 @@ Every row is true today and points to real code. Name in the submission only the
 
 ## Before submitting
 
-The repository and a green CI run exist (2026-10-21); the demo URL does not at the moment. Left, outside the repository:
+The repository and a green CI run exist (2026-10-21); no hosted URL exists at the moment (the rules accept a test build, D26). Left, outside the repository:
 
-- Redeploy the demo (`docs/DEPLOY.md`, "Teardown and redeploy") and verify it; put the new address in the README, here and in the video.
+- Optional, needs approval (D26): redeploy a hosted copy (`docs/DEPLOY.md`, "Hosting on Azure Container Apps"), verify it, and put the address in the README, here and in the video. Rule 4.8 accepts a test build, and the public image is one; name Azure Container Apps in the pitch only while a hosted copy is up.
 
-- The demo video (under 2 minutes, public on YouTube or Vimeo, showing the public URL; `DEMO_SCRIPT.md`). Add "open source (MIT)" to the video's last line: the repository is public.
-- The hackathon "Projects" form: repository, video, demo URL and this pitch.
-- If Azure AI Speech clips are made (G3 of `docs/DEPLOY.md`), add "or Azure AI Speech neural voices, pre-generated as clips" after the sentence about the browser voice; until then do not name it.
-- Keep the demo up until 10 Nov 2026, 23:59 Pacific and run the cost check (G6).
+- The demo video (under 2 minutes, public on YouTube or Vimeo, showing the app running in a browser; `DEMO_SCRIPT.md`). Add "open source (MIT)" to the video's last line: the repository is public.
+- The hackathon "Projects" form: repository, video, this pitch, and testing instructions (the README "For judges" steps; a demo URL only if a hosted copy exists, rule 4.8).
+- If Azure AI Speech clips are made (`docs/DEPLOY.md`, "Making the voice clips"), add "or Azure AI Speech neural voices, pre-generated as clips" after the sentence about the browser voice; until then do not name it.
+- If a hosted copy is made, keep it up until 10 Nov 2026, 23:59 Pacific and run the cost check (`docs/DEPLOY.md`).
 
 ## What problem it solves, for whom
 

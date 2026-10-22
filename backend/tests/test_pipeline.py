@@ -86,6 +86,30 @@ def test_real_sessions_never_overlap_and_always_say_the_must_say_moments():
             assert all(c.start_ms >= 0 for c in s.cues)
 
 
+def test_speech_cues_are_at_least_250_ms_apart_whatever_the_constant_says():
+    # SPEC section 6 pins 250 ms. The other gap tests compare with GAP_MS itself, so they cannot notice it changing.
+    for preset in PRESETS.values():
+        for detail in ("essential", "standard", "full"):
+            s = session(detail, preset=preset)
+            assert all(b.start_ms - a.end_ms >= 250 for a, b in zip(s.cues, s.cues[1:])), (preset.id, detail)
+    assert GAP_MS == 250
+
+
+def test_every_cue_ends_inside_the_session_so_the_player_speaks_it():
+    # The full-time whistle is the last event of its window: its sentence used to start after the window had
+    # ended, so the page finished first and the report and cue sheet counted a cue that was never played.
+    for preset in PRESETS.values():
+        for detail in ("essential", "standard", "full"):
+            for lang in ("en", "it"):
+                for rate in (0.5, 1.0, 2.0):
+                    s = session(detail, preset=preset, lang=lang, rate=rate)
+                    assert all(c.end_ms <= s.duration_ms for c in s.cues), (preset.id, detail, lang, rate)
+                    assert s.report.silence_ms == max(0, s.duration_ms - s.report.speech_ms)
+    final = session("standard", preset=PRESETS["final_whistle"])
+    assert "Full-time" in final.cues[-1].text and final.cues[-1].end_ms == final.duration_ms
+    assert final.duration_ms > (PRESETS["final_whistle"].to_s - PRESETS["final_whistle"].from_s) * 1000
+
+
 def test_cues_start_close_to_their_moment():
     s = session("full")
     for cue in (c for c in s.cues if c.priority < 3):
