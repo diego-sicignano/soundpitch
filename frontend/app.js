@@ -85,6 +85,7 @@ async function loadSession() {
   try {
     session = await getJson(`/api/session?${settingsQuery()}`);
   } catch (error) {
+    if (token === loadToken) state.session = null; // never play the old settings' session under the new ones
     say("The commentary could not be prepared.");
     return;
   }
@@ -134,6 +135,10 @@ function renderReport() {
     ["Overlaps", report.overlaps],
     ["Speaking", `${speechShare}%`],
   ];
+  const passed = report.verified === report.cues;
+  $("report-summary").textContent = passed
+    ? `All ${report.cues} ${report.cues === 1 ? "description" : "descriptions"} passed the check as written.`
+    : `${report.verified} of ${report.cues} descriptions passed the check as written; ${report.fallback} ${report.fallback === 1 ? "was" : "were"} replaced by a template that always passes.`;
   $("report").replaceChildren(
     ...rows.map(([name, value]) => {
       const row = document.createElement("div");
@@ -357,7 +362,7 @@ function play() {
   if (!audioContext && !SPEECH_OFF && window.AudioContext) audioContext = new AudioContext();
   if (audioContext && audioContext.state === "suspended") audioContext.resume();
   if (window.speechSynthesis) window.speechSynthesis.resume();
-  if (currentAudio) currentAudio.play().catch(() => {});
+  if (currentAudio && !currentAudio.ended) currentAudio.play().catch(() => {}); // an ended clip would start again
   state.playing = true;
   state.last = performance.now();
   $("play").textContent = "Pause";

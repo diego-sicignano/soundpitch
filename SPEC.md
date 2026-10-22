@@ -134,7 +134,10 @@ Landmarks `header`, `main`, skip link. All controls are real labelled form eleme
 | `captions` | large caption line |
 | `live-region` | `aria-live="polite"` used by the `screenreader` output |
 | `report` | verification and timing figures |
+| `report-summary` | one plain sentence above `report` that says how many descriptions passed the check as written and how many a template replaced (derived from the same figures) |
 | `status` | `role="status"` line: loading, ready, playing, paused, finished, errors |
+
+Layout: on a wide screen the listening settings sit beside the pitch and timeline; on a narrow one every panel stacks, a transcript line shows its time and badges above its text, and the report tiles stay two to a row. No content may need horizontal scrolling at 320 px.
 
 Query parameters for automation: `preset` (initial window, default `goal_1`), `speed` (clock multiplier, default 1), `speech=off`.
 
