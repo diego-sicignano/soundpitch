@@ -400,6 +400,10 @@ summary {
   .panel:nth-of-type(5) {
     grid-column: 1 / -1;
   }
+
+  .panel:nth-of-type(3) {
+    align-self: start; /* the pitch card is shorter than the settings: no empty stretch below it */
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
