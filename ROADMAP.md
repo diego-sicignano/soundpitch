@@ -1,6 +1,6 @@
 # Roadmap
 
-Deadline: **27 Oct 2026, 23:59 Pacific** (28 Oct, 07:59 in Italy). Judges need the demo online **until 10 Nov, 23:59 Pacific** (11 Nov, 08:59 in Italy). See [`docs/hackathon/`](docs/hackathon/).
+Deadline: **27 Oct 2026, 23:59 Pacific** (28 Oct, 07:59 in Italy). Judges need access to the working project **until 10 Nov, 23:59 Pacific** (11 Nov, 08:59 in Italy); rule 4.8 accepts a test build, so a hosted copy is optional (D26). See [`docs/hackathon/`](docs/hackathon/).
 
 Judging weights five criteria at 20% each and ties go to criterion 1 (technology), so tickets are ordered by what moves the score. Each ticket lives in [`docs/tickets/`](docs/tickets/), cites the acceptance rows of [`SPEC.md`](SPEC.md) it satisfies, and is done only when its verification commands exit 0.
 
@@ -18,7 +18,7 @@ Judging weights five criteria at 20% each and ties go to criterion 1 (technology
 | S8 | One-page player: speech, ball sound, captions, pitch, timeline, transcript, screen-reader output |
 | S9 | axe-core clean before and after playback |
 | S10 | Evaluation harness with published counts (`docs/evaluation.md`) |
-| S11 | Foundry describer against a fake client; S12 one live run (20 Oct, 26 calls) |
+| S11 | Foundry describer against a fake client; S12 two live runs on 20 Oct (the second, 26 calls, is the recorded one) |
 | S13 | Agent Framework workflow builds the same session as the plain pipeline (D13) |
 | S15 | Cue sheet JSON and its committed JSON Schema (D15) |
 | S19, S20 | Grounded verifier (D9): facts and words must come from the moment; adversarial and false-rejection tests |
@@ -43,7 +43,7 @@ Judging weights five criteria at 20% each and ties go to criterion 1 (technology
 | T04 | [Azure AI Speech with a real key](docs/tickets/T04-azure-speech.md) | Azure resource, **owner's approval** | S14 | todo: the client and the clip tool exist and are tested against a stub; no Speech request has ever been sent and no clip exists (`docs/DEPLOY.md`, G3) |
 | T05 | [Cue sheet and JSON Schema](docs/tickets/T05-cue-sheet.md) | none | S15 | **done** |
 | T06 | [Deploy to Azure Container Apps](docs/tickets/T06-deploy.md) | T11, T04 optional, **owner's approval** | S16 | deployed and verified once on 2026-10-21, **deleted to stop costs**; optional now (D26): the public image is the test build rule 4.8 accepts (`docs/DEPLOY.md`); no Speech clips (T04 todo) |
-| T11 | [Record the replay file](docs/tickets/T11-record-replay.md) | T02b, prompt frozen, **owner's approval** (model calls) | S24 | **done**: recorded 2026-10-20, 26 replies, 30 of 30 windows, about 0.03 USD; the owner reviewed the Italian wording, one sentence is kept as recorded and documented |
+| T11 | [Record the replay file](docs/tickets/T11-record-replay.md) | T02b, prompt frozen, **owner's approval** (model calls) | S24 | **done**: recorded 2026-10-20, 26 replies covering 30 of 30 first-attempt requests (5 windows x 3 detail levels x 2 languages), about 0.03 USD; the owner reviewed the Italian wording, one sentence is kept as recorded and documented |
 | T07 | [Demo video and pitch](docs/tickets/T07-video-and-pitch.md) | T11, T06 | checklist | todo |
 | T08 | [MCP server (optional)](docs/tickets/T08-mcp-server.md) | T03 | S17 | todo, optional |
 | T09 | [Player focus (optional)](docs/tickets/T09-player-focus.md) | none | S18 | todo, optional |
@@ -72,5 +72,5 @@ Status values: `todo`, `in progress`, `done`. Change the row in the same commit 
 - Model spending is limited by the application's ledger (one SQLite file per host), not by Azure: the 5 EUR budget only alerts. The judges' path makes no model call (D12).
 - Speech spending has no hard cap until a pricing tier is chosen; the application's limits restart with the process (D14).
 - The pitch positions are generated, not measured.
-- Known, not fixed (found by an independent review on 2026-10-20, all low): two identical concurrent voice requests both call Azure and both count characters (no single flight); the per-client voice limit reads only the first `X-Forwarded-For` header line and a port suffix in that header was not checked against Container Apps; `markLanguage` is not reset after a failed load; the replay key hashes the system prompt but not the per-moment payload, so a changed template can leave a stale recorded reply that the verifier still checks (only the share of fallbacks would change); a recorded file with one invalid entry is ignored as a whole (`/api/health` then shows `replies: 0`).
+- Known, not fixed (found by an independent review on 2026-10-20, all low): two identical concurrent voice requests both call Azure and both count characters (no single flight); the per-client voice limit reads only the last `X-Forwarded-For` header line and a port suffix in that header was not checked against Container Apps; `markLanguage` is not reset after a failed load; the replay key hashes the system prompt but not the per-moment payload, so a changed template can leave a stale recorded reply that the verifier still checks (only the share of fallbacks would change); a recorded file with one invalid entry is ignored as a whole (`/api/health` then shows `replies: 0`).
 - Italian wording (D20, 2026-10-21): the templates now agree with a club name (singular verbs, no article before a name). The recorded Italian sentences that kept the old wording are rejected by the verifier and replaced by the templates at attempt 2, so 14 of the 15 Italian demo sessions report 2 attempts and the model's own words survive only in the other moments; re-recording would restore them (D20 assesses it: 52 of 81 Italian moments are affected, a full run is about USD 0.03 and also redraws the English, so it was left for the owner's separate authorization). Only the owner has read the Italian; no native-speaker review is recorded.

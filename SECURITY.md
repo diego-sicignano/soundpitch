@@ -11,7 +11,7 @@ SoundPitch is a hackathon project. It handles no personal data and runs on a ful
 ## What is limited, and what is not
 
 - **Model calls** (`SOUNDPITCH_LLM=foundry`) are decided by a durable usage ledger before they are sent: per-minute, per-day, per-token and monthly-estimate limits, fail closed (`docs/DECISIONS.md` D11). It is per host and counts estimates. Azure's own budget only alerts; it is not a cutoff.
-- **The judges' path makes no model call** (D12): it replays recorded replies and verifies them again on every request.
+- **The judges' path makes no model call** (D12): it replays recorded replies and verifies them again each time a session is built (built sessions are cached in memory).
 - **`POST /api/tts`** speaks only text that a session returned, serves repeated requests from memory, and refuses a request before calling Azure when a client, the process, the UTC day or the UTC month is over its limit (D14, `SPEC.md` §8). **These limits live in the memory of one process and restart at zero; they are a brake, not a spending cap.** The only hard cap on Speech spending is the pricing tier of the Speech resource. Behind a reverse proxy, set `SOUNDPITCH_TRUST_PROXY=1` (only behind exactly one trusted proxy), or every caller shares one per-client limit; the last `X-Forwarded-For` entry is read in its usual forms (with or without a port, IPv4 or IPv6) and anything that is not an address falls back to the connection's address (S27). A stored clip (D17) is served after the per-client limit and before the limits that protect Azure spending, because it costs nothing; it is served only for text a session returned and only if the clip's manifest entry names the same language and text, and the public image holds no Speech key. The Azure neural voice is synthetic and the page says so (S28).
 - **Score context** (S31) is a fixed list of phrases chosen by code from the score; no client or model input reaches it. `GET /api/voice` returns only clip counts and a boolean, never a key.
 - **Headers**: `nosniff`, `Referrer-Policy: no-referrer`, `X-Frame-Options: DENY` and a content security policy on every response except the interactive API documentation (D16). No CORS is configured.
@@ -23,4 +23,4 @@ No penetration test has been done. There is no authentication (the demo is publi
 
 ## Reporting a problem
 
-Open a GitHub issue, or if it involves a credential, a private security advisory on the repository. Please do not post live keys anywhere.
+Open a GitHub issue. Private vulnerability reporting is not enabled on this repository (checked 2026-10-23), so do not put a live key, token or exploit detail in the issue: say only that you found a problem involving a credential and ask for a private channel.

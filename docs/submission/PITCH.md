@@ -1,6 +1,6 @@
-# Pitch
+# Project description
 
-Status: ready to paste, for the project as it stands. Checked against the repository and the deployment on 2026-10-21: everything in the sections "One sentence", "Pitch" and "Technologies named" is true of the code and the evidence in it today. Rules 4.4 ask the pitch to name the Microsoft and Azure technologies *used*, so the text below names only those. The repository is public (<https://github.com/diego-sicignano/soundpitch>); the demo was deployed and verified on 2026-10-21 and then taken down to stop costs, and the video is still to be made (see "Before submitting"). Ticket: [T07](../tickets/T07-video-and-pitch.md).
+The text for the hackathon submission (rule 4.4: what was built, which Microsoft and Azure technologies it uses, what it does, what problem it solves). Checked against the repository on 2026-10-23. It names only technologies the project actually uses; the table below also lists what is not used. The repository is public (<https://github.com/diego-sicignano/soundpitch>). No hosted website is run: judges can run the public container image from the README ("For judges"; rule 4.8 accepts a test build). Ticket: [T07](../tickets/T07-video-and-pitch.md).
 
 ## One sentence
 
@@ -10,39 +10,28 @@ SoundPitch lets a blind or low-vision fan follow a football match by ear: a time
 
 For a blind fan, football commentary assumes you can see the pitch. Audio description exists, but coverage is patchy, and at club level it often depends on volunteers. SoundPitch generates it from match events.
 
-A synthetic match supplies the events. Code turns them into prioritised moments. A describer writes each sentence: in the demo, words that a model on **Microsoft Foundry** (`gpt-4.1-mini`) wrote on 20 October 2026 and the project recorded, so the demo makes no model call. A verifier lets a sentence state only facts that code takes from the events (players, teams, score, minute, position), in words from a reviewed list; wrong sentences are sent back, and after two retries a verified template takes over, so a listener never hears an invented player or score. For goals and whistles, code adds one sentence chosen from the score alone, saying what the moment means: the opening goal, the equaliser, the lead, who won. A timing planner fits the speech into the gaps so it never talks over a goal. The page speaks with the listener's own browser voice.
+A synthetic match supplies the events. Code turns them into prioritised moments. A describer writes each sentence: in the demo, words that a model on **Microsoft Foundry** (`gpt-4.1-mini`) wrote on 20 October 2026 and the project recorded (they almost always repeat the template sentences), so the demo makes no model call. A verifier lets a sentence state only facts that code takes from the events (players, teams, score, minute, position), in words from a reviewed list; wrong sentences are sent back, and after two retries a verified template takes over, so a listener never hears an invented player or score. For goals and whistles, code adds one sentence chosen from the score alone, saying what the moment means: the opening goal, the equaliser, the lead, who won. A timing planner fits the speech into the gaps so it does not talk over a goal (the length of speech is estimated; the browser voice is not measured). The page speaks with the listener's own browser voice.
 
 Listeners choose the detail level, English or Italian, a calm mode, large captions, or plain text for their own screen reader. The output is also a versioned, machine-readable cue sheet with a JSON Schema, for captioning or graphics systems.
 
-## Technologies named
+## Technologies
 
-Every row is true today and points to real code. Name in the submission only the rows marked **used** (Foundry, Agent Framework, GitHub Actions), and Azure Container Apps only while the redeployed demo is up.
+Every row is true today and points to real code.
 
 | Technology | Used for | Where in the repository | Status |
 |---|---|---|---|
-| Microsoft Foundry | The describer model; the demo replays its recorded replies | `backend/app/foundry.py`, `replay.py` | **used**: run live on 2026-10-20 (details, including a pacing bug that cost one extra invocation, in `docs/evidence/foundry-run.md`). Say plainly that the model writes within a verified vocabulary and often repeats the template wording, and that its words are verified again on every request |
-| Microsoft Agent Framework | `FoundryChatClient`; a workflow with a retry edge and a fallback | `backend/app/foundry.py`, `workflow.py` | **used**: `FoundryChatClient` made the recorded calls; the workflow is built and tested (T03, CI job `sdk`). Say it orchestrates one model and deterministic code, not autonomous agents, and that the public image does **not** include the framework (`SOUNDPITCH_LLM=replay`, `requirements.txt` only): the workflow is an option (`SOUNDPITCH_ORCHESTRATOR=workflow`), not what the demo runs |
-| GitHub Actions | Tests, SDK tests, image build and smoke, and the image publish | `.github/workflows/ci.yml` | **used**: all four jobs green on commit `09db91c` ([run](https://github.com/diego-sicignano/soundpitch/actions/runs/39622166407)), started by hand; say "started by hand" if asked, since push-triggered runs did not start |
-| Azure AI Speech | Neural voices, pre-generated once as clips | `backend/app/tts.py`, `clips.py`, `clips_build.py` | **not used**: never called, no clip exists. Do not name it |
-| Azure Container Apps | Public demo | `Dockerfile`, `docs/DEPLOY.md` | **not hosted now**: deployed and verified on 2026-10-21 (Consumption only, scale to zero), then deleted to stop costs. Name it only while a redeployed demo is up; then add "The public demo is a container on Azure Container Apps (Consumption plan, scaling to zero), built and tested by GitHub Actions; it makes no model call." after the sentence about the browser voice |
-| MCP | Match tools for the agent | none | **not used**: `backend/app/mcp_server.py` does not exist (T08 is optional). Do not name it |
-
-## Before submitting
-
-The repository and a green CI run exist (2026-10-21); no hosted URL exists at the moment (the rules accept a test build, D26). Left, outside the repository:
-
-- Optional, needs approval (D26): redeploy a hosted copy (`docs/DEPLOY.md`, "Hosting on Azure Container Apps"), verify it, and put the address in the README, here and in the video. Rule 4.8 accepts a test build, and the public image is one; name Azure Container Apps in the pitch only while a hosted copy is up.
-
-- The demo video (under 2 minutes, public on YouTube or Vimeo, showing the app running in a browser; `DEMO_SCRIPT.md`). Add "open source (MIT)" to the video's last line: the repository is public.
-- The hackathon "Projects" form: repository, video, this pitch, and testing instructions (the README "For judges" steps; a demo URL only if a hosted copy exists, rule 4.8).
-- If Azure AI Speech clips are made (`docs/DEPLOY.md`, "Making the voice clips"), add "or Azure AI Speech neural voices, pre-generated as clips" after the sentence about the browser voice; until then do not name it.
-- If a hosted copy is made, keep it up until 10 Nov 2026, 23:59 Pacific and run the cost check (`docs/DEPLOY.md`).
+| Microsoft Foundry | The describer model; the demo replays its recorded replies | `backend/app/foundry.py`, `replay.py` | **Used**: run live on 2026-10-20 (details, including a pacing bug that cost one extra invocation, in `docs/evidence/foundry-run.md`). The model writes within a verified vocabulary and almost always repeats the template wording; its words are verified again whenever a session is built |
+| Microsoft Agent Framework | `FoundryChatClient`; a workflow with a retry edge and a fallback | `backend/app/foundry.py`, `workflow.py` | **Used**: `FoundryChatClient` made the recorded calls; the workflow is built and tested (T03, CI job `sdk`). It orchestrates one model and deterministic code, not autonomous agents. The public image does not include the framework (`SOUNDPITCH_LLM=replay`, `requirements.txt` only): the workflow is an option (`SOUNDPITCH_ORCHESTRATOR=workflow`), not what the demo runs |
+| GitHub Actions | Tests, SDK tests, image build and smoke, and the image publish | `.github/workflows/ci.yml` | **Used**: all five jobs (backend, SDK, end-to-end, Docker, publish) green on commit `747e6f0` ([run](https://github.com/diego-sicignano/soundpitch/actions/runs/39846734463)); the workflow is started by hand (`workflow_dispatch`) because push-triggered runs did not start for this repository |
+| Azure AI Speech | Neural voices, pre-generated once as clips | `backend/app/tts.py`, `clips.py`, `clips_build.py` | **Not used**: never called, no clip exists; the page uses the browser voice |
+| Azure Container Apps | Optional hosting | `Dockerfile`, `docs/DEPLOY.md` | **Not hosted now**: deployed and verified once on 2026-10-21 (Consumption only, scale to zero), then deleted to stop costs; a hosted copy is optional (D26) |
+| MCP | Match tools for an agent | none | **Not used**: no MCP server exists in the repository (T08 is optional) |
 
 ## What problem it solves, for whom
 
-Blind and low-vision football fans, who today get either nothing or a commentator talking as if everyone could see. Deaf and hard-of-hearing fans get the same cues as captions. Broadcasters get a verified, machine-readable description track instead of hand-written scripts.
+Blind and low-vision football fans, who today get either nothing or a commentator talking as if everyone could see. Deaf and hard-of-hearing fans get the same cues as captions. A captioning or graphics system could read the same machine-readable cue sheet; no broadcaster has used it.
 
-## Honest limits to state if asked
+## Limits
 
 - No blind or low-vision listener has tested it yet; the style follows public guidance (`docs/research/accessibility.md`).
 - The match is synthetic, as the rules require.

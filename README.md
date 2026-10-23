@@ -1,28 +1,30 @@
 # SoundPitch
 
-**Follow a football match by ear.** SoundPitch turns a stream of synthetic match events into a timed audio description, a ball sound that moves left and right with the play, and large captions, for blind, low-vision, deaf and hard-of-hearing fans. Every description sentence is checked against the match events before anyone hears it; the closing score-context sentence of a goal or a whistle is computed from the score by code (see below).
+**Follow a football match by ear.** SoundPitch turns the synthetic events of a generated match (played back, not a live feed) into a timed audio description, a ball sound that moves left and right with the play, and large captions, for blind, low-vision, deaf and hard-of-hearing fans. Every description sentence is checked against the match events before anyone hears it; the closing score-context sentence of a goal or a whistle is computed from the score by code (see below).
 
 Built for the [Microsoft x Premier League "Inside the Game" hackathon](docs/hackathon/SUMMARY.md). All data is synthetic: the teams (Northgate Red, Harbour Blue) and the players are invented. This project is not affiliated with, endorsed by or sponsored by Microsoft or the Premier League.
 
-> **Status (22 Oct 2026).** Done and tested: the offline pipeline, the player page, the grounded verifier, the Foundry describer, the usage ledger, the replay mode (26 recorded Foundry replies that cover all 30 demo windows), the guarded voice endpoint, the cue-sheet JSON export, the score-context sentence and the Agent Framework workflow. **Not done:** Azure AI Speech has never been called (no voice clip exists, so the demo speaks with the browser's own voice) and no blind or low-vision listener has tested it. **No hosted demo is running at the moment**; run the tested image or a clone (below). Plan: [`ROADMAP.md`](ROADMAP.md).
+> **Status (23 Oct 2026).** Done and tested: the offline pipeline, the player page, the grounded verifier, the Foundry describer, the usage ledger, the replay mode (26 recorded Foundry replies that cover all 30 first-attempt requests, which are 5 windows x 3 detail levels x 2 languages; `standard` and `full` send the same request in the kick-off and final-whistle windows, so 30 requests need 26 distinct replies), the guarded voice endpoint, the cue-sheet JSON export, the score-context sentence and the Agent Framework workflow. **Not done:** Azure AI Speech has never been called (no voice clip exists, so the demo speaks with the browser's own voice) and no blind or low-vision listener has tested it. **No hosted demo is running at the moment**; run the tested image or a clone (below). Plan: [`ROADMAP.md`](ROADMAP.md).
 
 ## For judges
 
 Nothing to sign up for and nothing to pay for. The fastest way to try it is the tested image, which runs offline in replay mode:
 
 ```
-docker run -p 8000:8000 ghcr.io/diego-sicignano/soundpitch:09db91c21a048312e1855c45f3629e07d7b6e54d
+docker run -p 8000:8000 ghcr.io/diego-sicignano/soundpitch:747e6f0fdad12e4e86e94bb14dde0a1990bf16bc@sha256:44f65c497a725d8e861cb639414c9f3a670e8fb83a3fe281812c4dada6d49199
 ```
+
+The reference is pinned by digest (`sha256:44f65c49…`); the tag is the full SHA of the commit it was built from, whose CI run is [here](https://github.com/diego-sicignano/soundpitch/actions/runs/39846734463). The image is published for **`linux/amd64` only**. On an Apple Silicon Mac, Docker Desktop runs it through its emulation: Docker prints a platform warning (add `--platform linux/amd64` to silence it) and the start is slower. Checked on an M1 Mac on 23 Oct 2026 (details: [`docs/DEPLOY.md`](docs/DEPLOY.md)).
 
 Or use GitHub Codespaces or a local clone ("Run it" below). Then, on <http://localhost:8000>:
 
-1. Choose **Goal 1: Northgate, minute 16**, press **Play** (or the space bar). Use headphones: the ball sound moves with the play. The goal ends with what it means for the score ("The opening goal of the match.").
+1. Choose **Goal 1: Northgate, minute 16**, press **Play** (or the space bar); the window runs about 2 minutes 15 seconds in real time, the goal comes at about 1 minute 40, and the gaps are silence by design. Use headphones: the ball sound moves with the play. The goal ends with what it means for the score ("The opening goal of the match.").
 2. Open **How it was checked**: how many sentences were verified, how many fell back to a template, the pipeline steps.
-3. Try **Italiano**, **calm mode**, the "My own screen reader" output, and the `detail` levels.
+3. Try **Italiano**, **calm mode**, the "My own screen reader" output, and the levels under **How much to describe**.
 4. The same session as JSON for a graphics or captioning system: <http://localhost:8000/api/cuesheet?preset=goal_1> and its [JSON Schema](docs/contracts/cuesheet.v1.schema.json).
-5. To see the safety net work, start a second server with `SOUNDPITCH_LLM=always_bad`: every model sentence is wrong, the verifier rejects it three times and a verified template speaks.
+5. To see the safety net work, start a second server with `SOUNDPITCH_LLM=always_bad` (with the image: the same `docker run` line plus `-e SOUNDPITCH_LLM=always_bad`, and `-p 8001:8000` to open it on <http://localhost:8001>): every model sentence is wrong, the verifier rejects it three times and a verified template speaks.
 
-The image runs `SOUNDPITCH_LLM=replay`: words that a Foundry model wrote earlier and the project recorded, checked again by the verifier on every request. It needs no key and makes no model call, so it costs nothing however many people use it (design: [`docs/DECISIONS.md`](docs/DECISIONS.md) D12). A hosted copy on Azure Container Apps was deployed and verified once and then deleted to stop costs; how to redeploy it is in [`docs/DEPLOY.md`](docs/DEPLOY.md).
+The image runs `SOUNDPITCH_LLM=replay`: words that a Foundry model wrote earlier and the project recorded, checked again by the verifier each time a session is built (built sessions are cached in memory). It needs no key and makes no model call, so it costs nothing however many people use it (design: [`docs/DECISIONS.md`](docs/DECISIONS.md) D12). A hosted copy on Azure Container Apps was deployed and verified once and then deleted to stop costs; how to redeploy it is in [`docs/DEPLOY.md`](docs/DEPLOY.md).
 
 ## What it does
 
@@ -30,7 +32,7 @@ The image runs `SOUNDPITCH_LLM=replay`: words that a Foundry model wrote earlier
 - **Ball sound**: one short sound per event. Stereo position follows the ball across the pitch, pitch rises towards the opponent's goal. Different sounds for a pass, a shot, a save, a goal, a whistle.
 - **Why the moment matters**: a goal, half-time and full-time end with one sentence on what the score now means ("That makes it level.", "Northgate take the lead.", "Northgate win." at full-time), written by code from the score and never by a model; the page marks it as "score context" (`SPEC.md` §5, D18).
 - **Captions** in large type, and a transcript that fills as the match plays. The commentary is marked with its own `lang`, so a screen reader switches voice for Italian.
-- **Calm mode**: only goals and whistles make a sound, and the voice slows down.
+- **Calm mode**: only goals and whistles get a ball sound, and the voice slows down.
 - **Three outputs**: the browser's own voice (the default, which depends on the voices your browser and system have installed; the page says when there is none for the language), an Azure neural voice (offered only where the server has the stored clips or a Speech key; none exist in this repository yet), or plain text into an `aria-live` region for people who use their own screen reader.
 - **A visible plan**: the page draws the pitch and a timeline of when the voice speaks and when it is silent, and a report of what was checked.
 - **A machine-readable cue sheet** (`/api/cuesheet`) with versioned JSON Schema, and WebVTT captions.
@@ -77,7 +79,7 @@ Only code decides **what is true** and **when it is said**; a model only chooses
 | Microsoft Agent Framework | `FoundryChatClient` in `foundry.py`; the workflow graph in `workflow.py` (optional packages) | built and tested; it orchestrates, the model is not an autonomous agent |
 | Azure AI Speech | `tts.py` | written, tested against a stub, **not run with a real key** |
 | Azure Container Apps | `Dockerfile`, [`docs/DEPLOY.md`](docs/DEPLOY.md) | deployed and verified once on 2026-10-21 (Consumption only, scale to zero, one replica at most, replay mode, no secret), then deleted to stop costs; **not hosted now** |
-| GitHub Actions | `.github/workflows/ci.yml` | backend, SDK, end-to-end and Docker jobs green on `09db91c` ([run](https://github.com/diego-sicignano/soundpitch/actions/runs/39622166407)); started by hand (`workflow_dispatch`) because push-triggered runs did not start for this repository; the same run published the image to GHCR |
+| GitHub Actions | `.github/workflows/ci.yml` | backend, SDK, end-to-end and Docker jobs green on `747e6f0` ([run](https://github.com/diego-sicignano/soundpitch/actions/runs/39846734463)); started by hand (`workflow_dispatch`) because push-triggered runs did not start for this repository; the same run published the image to GHCR |
 
 ## Run it
 
@@ -92,7 +94,7 @@ python -m venv .venv
 
 Open <http://localhost:8000>. The same server serves the page and the API, offline.
 
-**In a browser, with no install: GitHub Codespaces.** On the repository page choose Code, Codespaces, Create codespace on main. The dev container (`.devcontainer/devcontainer.json`) builds the Python 3.13 environment, installs the backend and test dependencies and Playwright's Chromium (a few minutes). Then, in its terminal: `cd backend && .venv/bin/python -m uvicorn app.main:app --port 8000` and open the forwarded port 8000. Tests: `cd backend && .venv/bin/python -m pytest -q`, and from the root `npm run e2e`. Verified by building the container locally and running the tests in it; a Codespace itself has not been started. URL options for demos: `?preset=goal_2`, `?speed=10` (run the clock 10 times faster), `?speech=off` (no sound).
+**In a browser, with no install: GitHub Codespaces.** On the repository page choose Code, Codespaces, Create codespace on main. The dev container (`.devcontainer/devcontainer.json`) builds the Python 3.13 environment, installs the backend and test dependencies and Playwright's Chromium (a few minutes). Then, in its terminal: `cd backend && .venv/bin/python -m uvicorn app.main:app --port 8000` and open the forwarded port 8000. Tests: `cd backend && .venv/bin/python -m pytest -q`, and from the root `npm run e2e`. Verified by building the container locally and running the tests in it; a Codespace itself has not been started. URL options for demos: `?preset=goal_2`, `?speed=10` (run the clock 10 times faster; the browser voice does not speed up, so speech queues: use it to look at the pitch and the timeline, not to listen), `?speech=off` (no sound).
 
 Optional, for the Foundry describer and the workflow: `.\.venv\Scripts\python.exe -m pip install -r requirements-agents.txt` (Python 3.13), `az login`, set `FOUNDRY_PROJECT_ENDPOINT` and `FOUNDRY_MODEL`. Settings are environment variables; copy `backend/.env.example` to `backend/.env` (git-ignored) and load it into the shell that starts the server:
 
@@ -143,12 +145,13 @@ docker build -t soundpitch .
 docker run -p 8000:8000 soundpitch
 ```
 
-The image runs `SOUNDPITCH_LLM=replay` as a non-root user and needs no writable path, key or network. It was built and run on Docker here with `--read-only --cap-drop ALL`, with and without network, and passed the smoke check; the `docker` job in `.github/workflows/ci.yml` repeats that when the workflow runs. The voice of the public demo is meant to come from stored clips (`backend/app/audio/`, made once with `python -m app.clips_build`; **none exist yet**, so the image speaks with the browser voice until they are made). The image of each tested commit is published on GHCR (`docker pull ghcr.io/diego-sicignano/soundpitch:<commit sha>`, public, no login). Deployment: [`docs/DEPLOY.md`](docs/DEPLOY.md).
+The image runs `SOUNDPITCH_LLM=replay` as a non-root user and needs no writable path, key or network. It was built and run on Docker here with `--read-only --cap-drop ALL`, with and without network, and passed the smoke check; the `docker` job in `.github/workflows/ci.yml` repeats the read-only, no-capability and smoke checks (not the no-network run) when the workflow runs. The voice of the judges' image is meant to come from stored clips (`backend/app/audio/`, made once with `python -m app.clips_build`; **none exist yet**, so the image speaks with the browser voice until they are made). The image of each tested commit is published on GHCR (`docker pull ghcr.io/diego-sicignano/soundpitch:<commit sha>`, public, no login); it is `linux/amd64` only. The image of `747e6f0` was pulled anonymously and run with its digest checked, on 23 Oct 2026 (what was checked: [`docs/DEPLOY.md`](docs/DEPLOY.md), "Verified on 23 Oct 2026"). Deployment: [`docs/DEPLOY.md`](docs/DEPLOY.md).
 
 ## Honest limits
 
 - No blind or low-vision listener has tested it. The style follows public guidance (RNIB, Sky Sports' radio-style description) and is unvalidated.
 - The match is generated, so pitch positions are plausible, not measured.
+- Not real-time: a whole window is planned before it plays, the match is generated and no model is called while it runs.
 - The verifier checks where facts and words come from, not the meaning of a sentence (see above).
 - The score-context sentence (S31) is not checked by the verifier: it is a fixed phrase picked by code from the score, covered by tests. Its Italian wording was written by the assistant (singular verb with a club name, "Northgate passa in vantaggio") and has not been reviewed by a native speaker; the Italian templates were corrected to the same singular on 2026-10-21 (D20). The recorded Italian sentences that kept the old plural wording are now rejected by the verifier and replaced by the templates, so 14 of the 15 Italian demo sessions report 2 attempts and every moment is still verified; re-recording the Italian windows would restore the model's own words.
 - The Foundry model copies the template sentences in most cues (own wording in 0% of English and 13.6% of Italian cues in the recorded run, 1.2% and 16.0% in an earlier one, `docs/evidence/foundry-run.md`), so today it adds little wording of its own. One of its Italian sentences is not good Italian and the verifier accepted it, because it does not check meaning; it is kept as recorded and documented, and the owner reviewed the other eight Italian sentences the model wrote. The figures are two runs of one deployment.
@@ -172,7 +175,7 @@ backend/app/       the pipeline, the API, the verifier, the describers, the work
 backend/tests/     pytest suite
 frontend/          index.html, app.js, styles.css (no build step)
 e2e/               Playwright tests with axe-core
-docs/              architecture, deploy, decisions, evaluation, evidence, contracts, screenshots, hackathon rules, submission drafts
+docs/              architecture, deploy, decisions, evaluation, evidence, contracts, screenshots, our summary of the hackathon rules and compliance record (not the Official Rules text), submission drafts
 .github/           CI: backend tests, SDK tests, end-to-end tests, Docker build and smoke
 ```
 
