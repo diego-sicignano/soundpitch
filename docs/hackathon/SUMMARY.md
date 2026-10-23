@@ -88,7 +88,7 @@ You keep ownership, but you grant Microsoft and the Premier League a worldwide, 
 | Rule | SoundPitch status |
 |---|---|
 | Synthetic data only | Yes: a seeded generator, no real footage or data. |
-| Five-stage pipeline | Ingest, Interpret, Render and Personalize are implemented (see `SPEC.md` section 2). Two honest gaps against section 4.1: "Explain" says **what** happened and who was involved, not **why a moment matters** (the verifier forbids opinion on purpose); and "Interpret" produces prioritised moments, not statistics or patterns. Personalization is an accessibility profile, not a favourite club or player (T09, optional). |
+| Five-stage pipeline | Ingest, Interpret, Render and Personalize are implemented (see `SPEC.md` section 2). Two honest gaps against section 4.1. "Explain": the description says **what** happened and who was involved, and **why it matters** is only one code-written sentence on what the score now means, for goals, half-time and full-time (S31), not tactical analysis. "Interpret" produces prioritised moments, not statistics or patterns. Personalization is an accessibility profile, not a favourite club or player (T09, optional). |
 | Render as timed, machine-readable output | Cues, earcons and WebVTT with millisecond timings. The cue sheet has a versioned JSON Schema (`docs/contracts/cuesheet.v1.schema.json`). |
 | Two genuinely different experiences | Blind and low-vision listening, captions for deaf and hard-of-hearing fans, calm mode, three detail levels, two languages. |
 | "Hero technologies" | **Partly met.** Foundry: run live twice on 2026-10-20 (the second run, 26 calls, is the recorded one), replay mode for the demo. Agent Framework: `FoundryChatClient` and a workflow (`workflow.py`). Not yet: Azure AI Speech with a real key (T04), Azure Container Apps hosting (T06), MCP (T08, optional). Criterion 1 is the tie-breaker, so this matters most. |
@@ -100,8 +100,8 @@ You keep ownership, but you grant Microsoft and the Premier League a worldwide, 
 
 - **Original work (4.6, 4.11):** the rules require the submission to be the entrant's own original work, solely owned. The README states that an AI coding assistant was used; the specification and the decisions are in the repository. 8.2 asks winners to verify their "role ... in the creation of the Submission".
 - **Participation:** individual.
-- **Commit email:** commits use the author's GitHub `noreply` address.
-- **Trademarks:** do not show Premier League or Microsoft logos in the video without permission (4.4); the README says the project is not affiliated with either.
-- **Voice-over:** use your own voice, or a synthetic voice whose licence allows it. No music.
+- **Commit email:** commits use a noreply address: the author's GitHub one in 32 commits, `noreply@anthropic.com` in the 6 made by the coding assistant (checked 2026-10-23).
+- **Trademarks:** rule 4.4 bars third-party trademarks in the video without permission; the video shows no Premier League or Microsoft logo, and the README says the project is not affiliated with either.
+- **Voice-over:** the author's own voice (a synthetic voice would need a licence that allows it); no music.
 - **Judge access (4.8):** the rules say "free of charge and without any restriction" until the judging period ends and do not define "restriction". The judges' path therefore makes no model call and has no daily quota (`docs/DECISIONS.md` D12).
 
