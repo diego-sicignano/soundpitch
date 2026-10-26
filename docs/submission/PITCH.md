@@ -1,18 +1,22 @@
 # Project description
 
-The text for the hackathon submission (rule 4.4: what was built, which Microsoft and Azure technologies it uses, what it does, what problem it solves). Checked against the repository on 2026-10-23. It names only technologies the project actually uses; the table below also lists what is not used. The repository is public (<https://github.com/diego-sicignano/soundpitch>). No hosted website is run: judges can run the public container image from the README ("For judges"; rule 4.8 accepts a test build). Ticket: [T07](../tickets/T07-video-and-pitch.md).
+The text for the hackathon submission (rule 4.4: what was built, which Microsoft and Azure technologies it uses, what it does, what problem it solves). Checked against the repository on 2026-10-26. It names only technologies the project actually uses. The repository is public (<https://github.com/diego-sicignano/soundpitch>). No hosted website is run: judges can run the public container image from the README ("For judges"; rule 4.8 accepts a test build).
 
 ## One sentence
 
-SoundPitch lets a blind or low-vision fan follow a football match by ear: a timed audio description, a ball sound that moves left and right with the play, and captions, with every description checked against the match events before it is spoken (the score summary after a goal or a whistle is computed from the score by code).
+SoundPitch lets a blind or low-vision fan follow a football match by ear: a timed audio description drafted by a Microsoft Foundry model, a ball sound that moves left and right with the play, captions and live match stats, with every name, number and score checked by code against the match events before it is spoken.
 
 ## Pitch (about 200 words)
 
 For a blind fan, football commentary assumes you can see the pitch. Audio description exists, but coverage is patchy, and at club level it often depends on volunteers. SoundPitch generates it from match events.
 
-A synthetic match supplies the events. Code turns them into prioritised moments. A describer writes each sentence: in the demo, words that a model on **Microsoft Foundry** (`gpt-4.1-mini`) wrote on 20 October 2026 and the project recorded (they almost always repeat the template sentences), so the demo makes no model call. A verifier lets a sentence state only facts that code takes from the events (players, teams, score, minute, position), in words from a reviewed list; wrong sentences are sent back, and after two retries a verified template takes over, so a listener never hears an invented player or score. For goals and whistles, code adds one sentence chosen from the score alone, saying what the moment means: the opening goal, the equaliser, the lead, who won. A timing planner fits the speech into the gaps so it does not talk over a goal (the length of speech is estimated; the browser voice is not measured). The page speaks with the listener's own browser voice.
+A synthetic match supplies the events. Code turns them into prioritised moments. A describer writes each sentence: in the demo, words that a model on **Microsoft Foundry** (`gpt-4.1-mini`) wrote on 26 October 2026 and the project recorded (about 29% in its own words), so the demo makes no model call. A second agent, the Analyst, uses the SoundPitch MCP tools to write studio points, and code rejects any point whose names or numbers are not in the line it cites. A verifier lets a sentence state only facts that code takes from the events (players, teams, score, minute, position), in words from a reviewed list; wrong sentences are sent back, and after two retries a verified template takes over, so a listener never hears an invented player or score. For goals and whistles, code adds one sentence chosen from the score alone, saying what the moment means: the opening goal, the equaliser, the lead, who won. A timing planner fits the speech into the gaps so it does not talk over a goal (the length of speech is estimated; the browser voice is not measured). The page speaks with the listener's own browser voice.
 
-Listeners choose the detail level, English or Italian, a calm mode, large captions, or plain text for their own screen reader. The output is also a versioned, machine-readable cue sheet with a JSON Schema, for captioning or graphics systems.
+Code also counts the match statistics an analyst expects (possession as a share of passes, also over the last five minutes to show who is pressing, pass accuracy, average pass length, shots, balls won) and the page updates them as the match plays. Listeners choose the detail level, English or Italian, a club or a player to follow (their moments are described more often and sound louder), a calm mode, large captions, or plain text for their own screen reader. The output is also a versioned, machine-readable cue sheet with a JSON Schema, for captioning or graphics systems.
+
+When a clip ends, code also writes a short summary: the score, each goal with its assist, and how much of the ball the scoring side had just before it. An AI agent such as GitHub Copilot in agent mode can use all of this over MCP, and gets only verified sentences and numbers counted by code.
+
+In 600 generated sessions, 0 of about 13,000 planted errors got past the verifier, no two cues overlapped and every goal and whistle was spoken (`docs/evaluation.md`).
 
 ## Technologies
 
@@ -20,12 +24,12 @@ Every row is true today and points to real code.
 
 | Technology | Used for | Where in the repository | Status |
 |---|---|---|---|
-| Microsoft Foundry | The describer model; the demo replays its recorded replies | `backend/app/foundry.py`, `replay.py` | **Used**: run live on 2026-10-20 (details, including a pacing bug that cost one extra invocation, in `docs/evidence/foundry-run.md`). The model writes within a verified vocabulary and almost always repeats the template wording; its words are verified again whenever a session is built |
-| Microsoft Agent Framework | `FoundryChatClient`; a workflow with a retry edge and a fallback | `backend/app/foundry.py`, `workflow.py` | **Used**: `FoundryChatClient` made the recorded calls; the workflow is built and tested (T03, CI job `sdk`). It orchestrates one model and deterministic code, not autonomous agents. The public image does not include the framework (`SOUNDPITCH_LLM=replay`, `requirements.txt` only): the workflow is an option (`SOUNDPITCH_ORCHESTRATOR=workflow`), not what the demo runs |
-| GitHub Actions | Tests, SDK tests, image build and smoke, and the image publish | `.github/workflows/ci.yml` | **Used**: all five jobs (backend, SDK, end-to-end, Docker, publish) green on commit `747e6f0` ([run](https://github.com/diego-sicignano/soundpitch/actions/runs/39846734463)); the workflow is started by hand (`workflow_dispatch`) because push-triggered runs did not start for this repository |
-| Azure AI Speech | Neural voices, pre-generated once as clips | `backend/app/tts.py`, `clips.py`, `clips_build.py` | **Not used**: never called, no clip exists; the page uses the browser voice |
-| Azure Container Apps | Optional hosting | `Dockerfile`, `docs/DEPLOY.md` | **Not hosted now**: deployed and verified once on 2026-10-21 (Consumption only, scale to zero), then deleted to stop costs; a hosted copy is optional (D26) |
-| MCP | Match tools for an agent | none | **Not used**: no MCP server exists in the repository (T08 is optional) |
+| Microsoft Foundry | The describer model; the demo replays its recorded replies | `backend/app/foundry.py`, `replay.py` | **Used**: the describer and the Analyst agent were recorded live on 2026-10-26 (`docs/evidence/foundry-run.md`, `docs/evidence/analyst-run.md`). The describer writes within a verified vocabulary, about 29% of the spoken cues are in its own words, every one verified at the first attempt; their words are verified again whenever a session is built |
+| Microsoft Agent Framework | `FoundryChatClient`; a workflow graph with a retry edge and a fallback | `backend/app/foundry.py`, `workflow.py` | **Used, and the demo runs it**: `FoundryChatClient` made the recorded calls, and the judges' image builds every session through the workflow (`SOUNDPITCH_ORCHESTRATOR=workflow`, D31): MomentDetector, Describer, Verifier, Fallback and TimingPlanner executors with a conditional retry edge, each named in the page's pipeline steps. One executor uses a model; the others are deterministic code |
+| Model Context Protocol | The match as read-only tools for an AI agent: presets, match, moments, the verified commentary, statistics | `backend/app/mcp_server.py`, `.vscode/mcp.json` | **Used**: official MCP Python SDK (FastMCP); the judges' image serves it with `docker run -i --rm <image> python -m app.mcp_server`, and `.vscode/mcp.json` connects GitHub Copilot agent mode to it. An agent gets only verified sentences and numbers counted by code (D32) |
+| GitHub Actions | Tests, SDK tests, image build and smoke, and the image publish | `.github/workflows/ci.yml` | **Used**: all five jobs (backend, SDK, end-to-end, Docker, publish) green on commit `b404cd2` ([run](https://github.com/diego-sicignano/soundpitch/actions/runs/40340935978)) |
+
+Azure AI Speech: 200 stored clips made once with Azure AI Speech neural voices (`en-GB-RyanNeural`, `it-IT-DiegoNeural`) on 26 Oct 2026, served by the image with no key. Built but not in use today: Azure Container Apps hosting (deployed and verified once on 2026-10-21, then deleted to stop costs; `docs/DEPLOY.md`).
 
 ## What problem it solves, for whom
 
@@ -35,6 +39,6 @@ Blind and low-vision football fans, who today get either nothing or a commentato
 
 - No blind or low-vision listener has tested it yet; the style follows public guidance (`docs/research/accessibility.md`).
 - The match is synthetic, as the rules require.
-- The code was written with an AI coding assistant (Claude Code), directed by the owner through the specification and decision records (README, "Built with AI assistance"); the compliance reading is in `docs/hackathon/COMPLIANCE.md`.
-- No native Italian speaker has reviewed the Italian commentary. In the demo, 14 of the 15 Italian sessions are re-described once by the verified templates, because the recorded model sentences used wording the corrected vocabulary no longer accepts; every moment is still verified and none falls back (D20).
+- The code was written with an AI coding assistant (Claude Code), directed by me through the specification and decision records (README, "Built with AI assistance").
+- The Italian commentary was reviewed by the author, a native speaker.
 - The verifier checks where facts and words come from, not the meaning of the sentence; its closed vocabulary rejects most free wording, and the template speaks instead.

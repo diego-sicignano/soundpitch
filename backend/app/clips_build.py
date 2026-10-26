@@ -18,10 +18,10 @@ import sys
 import time
 from typing import get_args
 
-from app import clips, tts
+from app import analysis, clips, tts
 from app.contracts import Detail, Lang, Profile
 from app.match_gen import SEED, generate_match
-from app.pipeline import build_presets, verified_descriptions
+from app.pipeline import build_presets, build_session, verified_descriptions
 from app.replay import ReplayDescriber, load_store
 
 # Standard neural voices, USD per million characters: Microsoft Learn, "Azure AI Speech quotas and limits"
@@ -36,6 +36,7 @@ def sentences() -> list[tuple[str, str]]:
     """Every (language, text) the demo can speak, sorted."""
     match = generate_match(SEED)
     describer = ReplayDescriber(load_store())
+    analyst = analysis.ReplayAnalyst(analysis.load_store())
     found: set[tuple[str, str]] = set()
     for preset in build_presets(match):
         for detail in get_args(Detail):
@@ -44,6 +45,9 @@ def sentences() -> list[tuple[str, str]]:
                 for description, _status in accepted.values():
                     found.add((lang, description.full))
                     found.add((lang, description.short))
+        for lang in get_args(Lang):  # the summary and the analysis are the same at every detail level (SPEC §19, §20)
+            session = build_session(match, preset, Profile(lang=lang), describer, analyst)
+            found.update((lang, text) for text in session.recap.lines + [p.text for p in session.analysis.points])
     return sorted(found)
 
 
@@ -67,7 +71,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--generate", action="store_true", help="call Speech for the missing clips (spends money)")
     parser.add_argument("--limit", type=int, help="make at most this many clips")
-    parser.add_argument("--max-chars", type=int, default=10_000, help="refuse to send more characters than this")
+    parser.add_argument("--max-chars", type=int, default=15_000, help="refuse to send more characters than this")
     parser.add_argument("--date", default="", help="date to record in the manifest (default: today)")
     args = parser.parse_args(argv)
 

@@ -8,7 +8,11 @@ const query = new URLSearchParams(location.search);
 const SPEED = Number(query.get("speed")) || 1; // clock multiplier, for demos and tests
 const SPEECH_OFF = query.get("speech") === "off";
 
-const state = { match: null, presets: [], session: null, playing: false, clock: 0, last: 0, cue: 0, ear: 0 };
+const state = { match: null, presets: [], session: null, playing: false, clock: 0, last: 0, cue: 0, ear: 0, stats: -1 };
+// A timer, not requestAnimationFrame: browsers pause animation frames in a background tab, which would stop the
+// commentary for a listener who switches tabs (a background timer still runs, about once a second).
+const TICK_MS = 50;
+let timer = 0;
 let audioContext = null;
 let currentAudio = null;
 let audioByCue = new Map();
@@ -16,12 +20,23 @@ let loadToken = 0;
 let voiceSupport = null; // GET /api/voice: what the Azure voice can do on this server (S29)
 const VOICE_NOTE = $("voice-note").textContent;
 const LANGUAGE_NAME = { en: "English", it: "Italian" };
+const ROLE_NAME = { gk: "goalkeeper", def: "defender", mid: "midfielder", fwd: "forward" };
+const STATS_ROWS = [
+  ["possession", "Possession", (s) => `${s.possession}%`],
+  ["recent_possession", "Possession, last 5 minutes", (s) => `${s.recent_possession}%`],
+  ["passes", "Passes completed", (s) => `${s.passes_completed} of ${s.passes}`],
+  ["pass_accuracy", "Pass accuracy", (s) => `${s.pass_accuracy}%`],
+  ["avg_pass_m", "Average pass", (s) => `${s.avg_pass_m.toFixed(1)} m`],
+  ["shots", "Shots", (s) => String(s.shots)],
+  ["shots_on_target", "Shots on target", (s) => String(s.shots_on_target)],
+  ["ball_won", "Balls won", (s) => String(s.ball_won)],
+];
 
 const clockText = (seconds) => `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`;
 const say = (text) => ($("status").textContent = text);
 
 function settingsQuery() {
-  return new URLSearchParams({
+  const params = new URLSearchParams({
     preset: $("preset").value,
     detail: $("detail").value,
     lang: $("lang").value,
@@ -29,6 +44,58 @@ function settingsQuery() {
     calm: $("toggle-calm").checked,
     rate: $("rate").value,
   });
+  if ($("focus").value) {
+    const [team, shirt] = $("focus").value.split(":"); // "home" for a club, "home:7" for a player
+    params.set("focus_team", team);
+    if (shirt) params.set("focus", shirt);
+  }
+  return params;
+}
+
+// "Follow" (SPEC §17): each club, then its players.
+function offerPlayers(match) {
+  const groups = [match.home, match.away].map((team) => {
+    const group = document.createElement("optgroup");
+    group.label = team.name;
+    group.append(new Option(`${team.name}, the whole team`, team.side));
+    group.append(...team.players.map((p) => new Option(`${p.name}, ${ROLE_NAME[p.role]}, number ${p.shirt}`, `${team.side}:${p.shirt}`)));
+    return group;
+  });
+  $("focus").append(...groups);
+}
+
+// Match stats (SPEC §18): one row per statistic, one column per team; the values follow the clock.
+function renderStats() {
+  $("stats-home").textContent = state.match.home.short;
+  $("stats-away").textContent = state.match.away.short;
+  $("stats-body").replaceChildren(
+    ...STATS_ROWS.map(([field, label]) => {
+      const row = document.createElement("tr");
+      const name = document.createElement("th");
+      name.scope = "row";
+      name.textContent = label;
+      const cells = ["home", "away"].map((side) => {
+        const cell = document.createElement("td");
+        cell.id = `stats-${field}-${side}`;
+        cell.setAttribute("data-testid", cell.id);
+        return cell;
+      });
+      row.append(name, ...cells);
+      return row;
+    }),
+  );
+  state.stats = -1;
+}
+
+function drawStats() {
+  const points = state.session.stats;
+  let index = 0;
+  while (index + 1 < points.length && points[index + 1].t_ms <= state.clock) index++;
+  if (index === state.stats) return;
+  state.stats = index;
+  for (const [field, , format] of STATS_ROWS) {
+    for (const side of ["home", "away"]) $(`stats-${field}-${side}`).textContent = format(points[index][side]);
+  }
 }
 
 async function getJson(url, options) {
@@ -42,14 +109,18 @@ async function init() {
     const [match, presets, voice] = await Promise.all([
       getJson("/api/match"),
       getJson("/api/presets"),
-      getJson("/api/voice").catch(() => null), // unknown: the Azure option stays, and a 501 falls back as before
+      getJson("/api/voice").catch(() => null), // unknown: the Azure option stays offered, and a 501 falls back to the browser voice
     ]);
     state.match = match;
     state.presets = presets;
     voiceSupport = voice;
+    // the neural voice by default where the server holds its clips (SPEC §9); else the browser's own voice
+    if (voice && voice.stored_clips[$("lang").value] > 0) $("output").value = "azure";
     if (window.speechSynthesis) window.speechSynthesis.getVoices(); // some browsers load their voices only after this call
     $("preset").replaceChildren(...presets.map((p) => new Option(p.title, p.id)));
+    offerPlayers(match);
     $("preset").value = query.get("preset") || "goal_1";
+    if (!$("preset").value) $("preset").value = "goal_1"; // an unknown ?preset= falls back to the first goal
     await loadSession();
   } catch (error) {
     say("The match could not be loaded. Is the server running?");
@@ -79,13 +150,19 @@ function offerVoices() {
 async function loadSession() {
   const token = ++loadToken;
   stop();
+  $("play").textContent = "Play";
+  $("play").disabled = true; // a click now would play the old settings' session
   const voiceChanged = offerVoices();
+  const restarted = state.session && state.clock > 0 ? " It starts again from the beginning." : "";
   say("Preparing the commentary");
   let session;
   try {
     session = await getJson(`/api/session?${settingsQuery()}`);
   } catch (error) {
-    if (token === loadToken) state.session = null; // never play the old settings' session under the new ones
+    if (token === loadToken) {
+      state.session = null; // never play the old settings' session under the new ones
+      $("play").disabled = false;
+    }
     say("The commentary could not be prepared.");
     return;
   }
@@ -97,13 +174,16 @@ async function loadSession() {
   state.ear = 0;
   audioByCue = new Map();
   $("transcript").replaceChildren();
+  $("summary").hidden = true; // shown only once the clip has finished: it would tell what is about to happen
   $("captions").textContent = "";
   $("live-region").textContent = "";
   renderTimeline();
   renderReport();
+  renderStats();
   draw();
   $("play").textContent = "Play";
-  say(`Ready: ${session.title}. ${session.cues.length} descriptions. ${voiceChanged}`.trim());
+  $("play").disabled = false;
+  say(`Ready: ${session.title}. ${session.cues.length} descriptions.${restarted} ${voiceChanged}`.trim());
   if ($("output").value === "azure" && !SPEECH_OFF) prefetchAzure(session, token);
 }
 
@@ -153,7 +233,8 @@ function renderReport() {
   $("trace").replaceChildren(
     ...trace.map((step) => {
       const li = document.createElement("li");
-      li.textContent = `${step.step}, attempt ${step.attempt}: ${step.status}, ${step.detail}`;
+      const by = step.executor ? `${step.executor} (Agent Framework executor): ` : ""; // SPEC §12
+      li.textContent = `${by}${step.step}, attempt ${step.attempt}: ${step.status}, ${step.detail}`;
       return li;
     }),
   );
@@ -179,6 +260,9 @@ function draw() {
     $("ball").setAttribute("cy", String((at.y / 100) * 68));
   }
   $("playhead").style.left = `${Math.min(100, (state.clock / session.duration_ms) * 100)}%`;
+  const preset = state.presets.find((p) => p.id === session.preset);
+  if (preset) $("match-clock").textContent = `Match time ${clockText(preset.from_s + state.clock / 1000)}`;
+  drawStats();
 }
 
 // --- output ----------------------------------------------------------------------------
@@ -191,7 +275,7 @@ function effectiveRate() {
 function announce(text) {
   const region = $("live-region");
   region.textContent = "";
-  requestAnimationFrame(() => (region.textContent = text));
+  setTimeout(() => (region.textContent = text), TICK_MS); // a frame callback would wait while the tab is hidden
 }
 
 // Says honestly when the browser voice cannot speak (S30): the captions, the transcript and the screen-reader output remain.
@@ -241,7 +325,7 @@ function prefetchAzure(session, token) {
       await audioByCue.get(cue.id);
     }
   };
-  [worker(), worker(), worker()];
+  for (let i = 0; i < 3; i++) worker(); // three requests at a time
 }
 
 async function speak(cue) {
@@ -249,9 +333,12 @@ async function speak(cue) {
   if (output === "screenreader") return announce(cue.text);
   if (SPEECH_OFF) return;
   if (output === "azure") {
+    const token = loadToken;
     const blob = await (audioByCue.get(cue.id) || fetchAzure(cue).catch(() => null));
+    if (token !== loadToken || !state.playing) return; // paused or reloaded while the clip was fetched
     if (blob) {
       currentAudio = new Audio(URL.createObjectURL(blob));
+      currentAudio.onended = (event) => URL.revokeObjectURL(event.target.src);
       currentAudio.preservesPitch = true;
       currentAudio.playbackRate = blob.playbackFactor || 1;
       return currentAudio.play().catch(() => browserSpeak(cue.text));
@@ -327,9 +414,10 @@ function show(cue) {
     text.textContent = cue.text;
   }
   item.append(time, text, badges);
-  $("transcript").append(item);
   const scroller = $("transcript").parentElement;
-  scroller.scrollTop = scroller.scrollHeight;
+  const atBottom = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 40; // measured before the new line
+  $("transcript").append(item);
+  if (atBottom) scroller.scrollTop = scroller.scrollHeight; // do not pull away a reader who scrolled back
   if ($("toggle-captions").checked) $("captions").textContent = cue.text;
 }
 
@@ -348,16 +436,26 @@ function tick(now) {
   }
   draw();
   if (state.clock >= duration) return finish();
-  requestAnimationFrame(tick);
+  schedule();
+}
+
+function schedule() {
+  clearTimeout(timer); // one clock loop, however fast Play and Pause are pressed
+  timer = setTimeout(() => tick(performance.now()), TICK_MS);
 }
 
 function play() {
-  if (!state.session) return;
+  if (!state.session) {
+    say("Nothing to play yet: the commentary is not ready. Change a setting to try again.");
+    return;
+  }
   if (state.clock >= state.session.duration_ms) {
     state.clock = 0;
     state.cue = 0;
     state.ear = 0;
     $("transcript").replaceChildren();
+    $("captions").textContent = "";
+    $("summary").hidden = true;
   }
   if (!audioContext && !SPEECH_OFF && window.AudioContext) audioContext = new AudioContext();
   if (audioContext && audioContext.state === "suspended") audioContext.resume();
@@ -368,7 +466,7 @@ function play() {
   $("play").textContent = "Pause";
   const problem = $("output").value === "browser" && !SPEECH_OFF ? browserVoiceProblem() : "";
   say(problem ? `Playing. ${problem}` : "Playing");
-  requestAnimationFrame(tick);
+  schedule();
 }
 
 function pause() {
@@ -389,6 +487,62 @@ function finish() {
   state.playing = false;
   $("play").textContent = "Play again";
   say("The clip has finished.");
+  showSummary();
+}
+
+// The code-written summary of the match so far (SPEC §19): shown, and heard, once the clip has finished.
+function showSummary() {
+  const { lines, lang } = state.session.recap;
+  $("summary-lines").setAttribute("lang", lang);
+  $("summary-lines").replaceChildren(
+    ...lines.map((line, n) => {
+      const item = document.createElement("li");
+      item.setAttribute("data-testid", `summary-line-${n + 1}`);
+      item.textContent = line;
+      return item;
+    }),
+  );
+  const { analysis } = state.session;
+  $("analysis-by").textContent =
+    analysis.by === "model"
+      ? "Written by an AI agent on Microsoft Foundry; every name and number was checked against the line it cites."
+      : "Written by code from the summary.";
+  $("analysis-points").setAttribute("lang", lang);
+  $("analysis-points").replaceChildren(
+    ...analysis.points.map((point, n) => {
+      const item = document.createElement("li");
+      item.setAttribute("data-testid", `analysis-point-${n + 1}`);
+      item.textContent = point.text;
+      return item;
+    }),
+  );
+  $("summary").hidden = false;
+  // code points repeat the summary, so only the agent's points are heard after it
+  const heard = analysis.by === "model" ? ["Studio analysis.", ...analysis.points.map((p) => p.text)] : [];
+  const text = [...lines, ...heard].join(" ");
+  if ($("output").value === "screenreader") announce(text);
+  else if ($("output").value === "azure" && !SPEECH_OFF) speakClips([...lines, ...heard.slice(1)]);
+  else if (!SPEECH_OFF) browserSpeak(text);
+}
+
+// The Azure voice reads the summary one stored clip per line (each line is issued text, SPEC §8).
+async function speakClips(lines) {
+  const token = loadToken;
+  for (const line of lines) {
+    const blob = await fetchAzure({ text: line }).catch(() => null);
+    if (token !== loadToken || state.playing) return; // reloaded, or the match was started again
+    if (!blob) return browserSpeak(lines.slice(lines.indexOf(line)).join(" "));
+    currentAudio = new Audio(URL.createObjectURL(blob));
+    currentAudio.preservesPitch = true;
+    currentAudio.playbackRate = blob.playbackFactor || 1;
+    await new Promise((done) => {
+      currentAudio.onended = (event) => {
+        URL.revokeObjectURL(event.target.src);
+        done();
+      };
+      currentAudio.play().catch(done);
+    });
+  }
 }
 
 // --- wiring ----------------------------------------------------------------------------
@@ -397,12 +551,13 @@ $("play").addEventListener("click", () => (state.playing ? pause() : play()));
 document.addEventListener("keydown", (event) => {
   if (event.code !== "Space" || event.repeat) return;
   if (["INPUT", "SELECT", "TEXTAREA", "BUTTON", "SUMMARY"].includes(event.target.tagName)) return;
+  if (event.target.closest(".scroller")) return; // Space scrolls the transcript there
   event.preventDefault();
   $("play").click();
 });
 // An inline onsubmit is blocked by the page's content security policy, so Enter in a field would reload the page.
 $("settings").addEventListener("submit", (event) => event.preventDefault());
-for (const id of ["preset", "detail", "lang", "toggle-earcons", "toggle-calm"]) {
+for (const id of ["preset", "detail", "focus", "lang", "toggle-earcons", "toggle-calm"]) {
   $(id).addEventListener("change", loadSession);
 }
 $("rate").addEventListener("input", () => ($("rate-value").textContent = Number($("rate").value).toFixed(1)));

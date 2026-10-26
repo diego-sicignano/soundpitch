@@ -1,0 +1,17 @@
+{
+  "servers": {
+    "soundpitch": {
+      "type": "stdio",
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "ghcr.io/diego-sicignano/soundpitch:b404cd2a0342babe32716d8c7aac1203dc981c99@sha256:a478bacd77336714b8538bee36f4e56e86752b810880ea5b623dc0ec50be91cd",
+        "python",
+        "-m",
+        "app.mcp_server"
+      ]
+    }
+  }
+}

@@ -345,7 +345,7 @@ def to_markdown(result: dict) -> str:
         ("Each template description is altered on purpose so that it states something false or unsupported "
          "(standard detail, both languages). The verifier must reject every one. These alterations are the "
          "kinds the verifier was built for; the generated attacks in `backend/tests/test_grounding.py` and the "
-         "independent review go further, and none of this measures a real model."),
+         "separate adversarial review go further, and none of this measures a real model."),
         "",
         "| Planted error | Cases | Wrongly accepted |",
         "|---|---|---|",
@@ -375,7 +375,7 @@ def to_markdown(result: dict) -> str:
         *_corpus_rows(acc),
         "",
         ("The first corpus is the price of a closed vocabulary (SPEC §5, D9) when a writer ignores it. The "
-         "second, written by an independent reviewer who had the word lists, tells how reachable the contract "
+         "second, written by a separate AI review agent that had the word lists, tells how reachable the contract "
          "is. Neither is a measurement of a model (that needs a live run: `python -m app.foundry_run`). Words that caused most rejections in the "
          "first corpus, to be reviewed for the vocabulary (a word may join it only if it cannot change a fact):"),
         "",

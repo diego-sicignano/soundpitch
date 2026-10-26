@@ -109,8 +109,9 @@ these rules and then speaks a fixed sentence instead, so follow them exactly:
 4. Every item of "required" must appear in "full"; "required_short" must appear in "short".
 5. "full" has at most 45 words. "short" has at most 15 words and is never longer than "full".
 6. Use only letters, spaces and . , ! : ; ' - . No digits outside a phrase, no symbols, emoji, quotes or brackets.
-7. "examples" show accepted sentences made of the same facts. Follow their order; vary the words only
-   within these rules. Never mention anything that is not given for the moment.
+7. "examples" show accepted sentences made of the same facts. Do not copy an example word for word:
+   write your own sentence with the same facts, choosing other words from "words" where they fit, in an
+   order that "positions" allows. Never mention anything that is not given for the moment.
 If a moment has "issues", your last sentence broke those rules: fix exactly that."""
 
 

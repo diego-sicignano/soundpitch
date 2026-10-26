@@ -94,3 +94,14 @@ def test_only_a_tested_main_commit_is_published_and_only_with_the_built_in_token
     assert "--password-stdin" in publish and "ghcr.io" in publish
     assert ":latest" not in publish and "${GITHUB_SHA}" in publish  # an immutable tag, never a moving one
     assert "azure/login" not in ci and "AZURE_" not in ci  # CI holds no Azure identity
+
+
+def test_the_judges_image_runs_the_agent_framework_workflow_on_recorded_replies():
+    dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
+    assert "SOUNDPITCH_LLM=replay" in dockerfile and "SOUNDPITCH_ORCHESTRATOR=workflow" in dockerfile
+    assert "pip install -r requirements-workflow.txt -r requirements-mcp.txt" in dockerfile  # the MCP server too (D32)
+    workflow = (ROOT / "backend" / "requirements-workflow.txt").read_text(encoding="utf-8")
+    agents = (ROOT / "backend" / "requirements-agents.txt").read_text(encoding="utf-8")
+    assert "agent-framework-core==" in workflow and "-r requirements.txt" in workflow
+    assert "-r requirements-workflow.txt" in agents and "agent-framework-core" not in agents  # one pin, one place
+

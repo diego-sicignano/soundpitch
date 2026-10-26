@@ -1,6 +1,6 @@
-# T09. Player focus (optional)
+# T09. Player focus
 
-**Depends on:** none  **Acceptance:** S18  **Spec:** §17  **Rules:** 4.1 (e): "player focused mode"
+**Status: done (2026-10-26, D29).**  **Depends on:** none  **Acceptance:** S18  **Spec:** §17  **Rules:** 4.1 (e): "player focused mode"
 
 ## Goal
 

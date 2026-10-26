@@ -36,6 +36,8 @@ def test_a_clean_run_verifies_everything_on_the_first_attempt():
         ("describer", "ok"),
         ("verifier", "ok"),
         ("timing", "ok"),
+        ("analyst", "ok"),
+        ("analysis_check", "ok"),
     ]
     assert {c.status for c in s.cues} == {"verified"}
 

@@ -1,6 +1,6 @@
 # T04. Azure AI Speech with a real key
 
-**Depends on:** none (needs an Azure Speech resource)  **Acceptance:** S14  **Spec:** §14  **Judging:** criterion 1 (a named Azure technology), criterion 4 (the demo is audio)
+**Depends on:** none (needs an Azure Speech resource)  **Acceptance:** S14  **Spec:** §14
 
 ## Goal
 

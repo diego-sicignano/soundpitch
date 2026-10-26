@@ -1,6 +1,6 @@
 # T02b. Foundry describer
 
-**Depends on:** [T02a](T02a-grounded-verifier.md) (done)  **Acceptance:** S11, S12  **Spec:** §5, §11  **Judging:** criteria 1 and 2, Best Use of Microsoft Foundry
+**Depends on:** [T02a](T02a-grounded-verifier.md) (done)  **Acceptance:** S11, S12  **Spec:** §5, §11
 
 ## Goal
 
@@ -23,7 +23,7 @@
 | `python -m app.foundry_run` and its tests | done |
 | **S12, a real request against a Foundry deployment** | **done 2026-10-20**: `docs/evidence/foundry-run.md` (26 calls, 81 of 81 moments verified at attempt 1 in each language, median 3.31 s, p95 4.52 s). The model copies the templates in 98.8% (en) and 84.0% (it) of cues; see D10. The cost hardening of 2026-10-20 (D11, S21) came after this run |
 
-## Independent review of the failure paths
+## Review of the failure paths
 
 A separate reviewer ran the integration against hostile replies, concurrency, outages and the cap. Defects confirmed, each now closed and covered by a test in `test_foundry.py`:
 
@@ -44,12 +44,12 @@ Foundry account `<account>` and project `<project>` on the pay-as-you-go subscri
 
 ## What the live run did not settle
 
-The three points below were open before the run and are now answered: the deployment accepted `response_format` and `instructions` (replies were typed JSON), `DefaultAzureCredential` worked through `az login`, and a window costs one call. Still open: a managed identity in Azure (T06), and the value of the model over the templates (1.2% and 16.0% own wording).
+The three points below were open before the run and are now answered: the deployment accepted `response_format` and `instructions` (replies were typed JSON), `DefaultAzureCredential` worked through `az login`, and a window costs one call. Still open: a managed identity in Azure, and the value of the model over the templates (1.2% and 16.0% own wording).
 
 ## What was not proved without the live run (before 2026-10-20)
 
 - That the deployment accepts `response_format` (structured output) and the `instructions` option for the chosen model. If it does not, the adapter returns the model's text and the describer parses it, so the pipeline still works; only the first-attempt rate suffers.
-- `DefaultAzureCredential` on this machine and, later, a managed identity in Azure (T06).
+- `DefaultAzureCredential` on this machine and, later, a managed identity in Azure.
 - The real first-attempt pass rate, the rejection reasons, the latency and the cost of a window.
 
 ## Steps

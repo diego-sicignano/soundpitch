@@ -4,10 +4,34 @@
     {
       "name": "soundpitch",
       "runtimeExecutable": ".venv/Scripts/python.exe",
-      "runtimeArgs": ["-m", "uvicorn", "app.main:app", "--port", "8000"],
+      "runtimeArgs": [
+        "-m",
+        "uvicorn",
+        "app.main:app",
+        "--port",
+        "8000"
+      ],
       "cwd": "backend",
       "port": 8000,
-      "env": { "SOUNDPITCH_LLM": "scripted" }
+      "env": {
+        "SOUNDPITCH_LLM": "scripted"
+      }
+    },
+    {
+      "name": "soundpitch-replay",
+      "runtimeExecutable": ".venv/Scripts/python.exe",
+      "runtimeArgs": [
+        "-m",
+        "uvicorn",
+        "app.main:app",
+        "--port",
+        "8010"
+      ],
+      "cwd": "backend",
+      "port": 8010,
+      "env": {
+        "SOUNDPITCH_LLM": "replay"
+      }
     }
   ]
 }

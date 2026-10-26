@@ -1,6 +1,6 @@
 # T03. Microsoft Agent Framework workflow
 
-**Status: done (2026-10-20).**  **Depends on:** T02  **Acceptance:** S13  **Spec:** §12  **Decision:** D13  **Judging:** criteria 1 and 2, Best Multi-Agent System
+**Status: done (2026-10-20).**  **Depends on:** T02  **Acceptance:** S13  **Spec:** §12  **Decision:** D13
 
 ## Goal
 

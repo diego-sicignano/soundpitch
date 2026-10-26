@@ -122,7 +122,7 @@ def test_the_api_in_replay_mode_serves_recorded_words_and_reports_what_it_holds(
     store, sessions, _, out = record(tmp_path)
     monkeypatch.setattr(replay, "STORE_PATH", out)
     replay.reset_shared()
-    main._session.cache_clear()
+    main.session_for.cache_clear()
     monkeypatch.setenv("SOUNDPITCH_LLM", "replay")
     try:
         assert client.get("/api/health").json() == {"status": "ok", "llm": "replay", "replies": len(store.replies)}
@@ -134,7 +134,7 @@ def test_the_api_in_replay_mode_serves_recorded_words_and_reports_what_it_holds(
         assert client.get("/api/health").json()["replies"] == 0
     finally:
         replay.reset_shared()
-        main._session.cache_clear()
+        main.session_for.cache_clear()
 
 
 def test_replay_needs_neither_the_sdk_nor_a_network(tmp_path):

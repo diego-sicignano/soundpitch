@@ -35,6 +35,7 @@ test("S8: play fills the transcript in order, draws the timeline and ends on the
   await expect(page.getByTestId("transcript")).toContainText(/Goal!|It's in!/);
   await expect(page.getByTestId("scoreline")).toHaveText("Northgate 1 – 0 Harbour");
   await expect(page.getByTestId("play")).toHaveText("Play again");
+  await expect(page.getByTestId("match-clock")).toHaveText(/^Match time 15:5\d$/); // the Goal 1 window ends at 15:50, plus the last clock step
 });
 
 test("the final whistle window plays on until the full-time sentence has been spoken", async ({ page }) => {
@@ -76,8 +77,86 @@ test("a failed reload leaves nothing to play from the old settings", async ({ pa
   await page.getByTestId("lang").selectOption("it");
   await expect(page.getByTestId("status")).toHaveText("The commentary could not be prepared.");
   await page.getByTestId("play").click();
-  await expect(page.getByTestId("status")).toHaveText("The commentary could not be prepared.");
+  await expect(page.getByTestId("status")).toHaveText(/^Nothing to play yet/);
   await expect(page.getByTestId("play")).toHaveText("Play");
+  await expect(page.getByTestId("transcript-cue-1")).toHaveCount(0);
+});
+
+test("Space in the transcript scrolls it and does not start the match", async ({ page }) => {
+  await ready(page);
+  await page.locator(".scroller").focus();
+  await page.keyboard.press("Space");
+  await expect(page.getByTestId("play")).toHaveText("Play");
+  await expect(page.getByTestId("status")).toContainText("Ready");
+});
+
+test("the transcript follows the newest line while nobody scrolls it", async ({ page }) => {
+  await ready(page, "/?speed=40&speech=off&preset=goal_3");
+  await playToEnd(page);
+  const scroller = await page.locator(".scroller").boundingBox();
+  const last = await page.locator('[data-testid^="transcript-cue-"]').last().boundingBox();
+  expect(last!.y + last!.height).toBeLessThanOrEqual(scroller!.y + scroller!.height + 1);
+});
+
+test("S18: following a club or a player sends it, and the page stays accessible", async ({ page }) => {
+  await ready(page);
+  const focus = page.getByTestId("focus");
+  await expect(focus.locator("option")).toHaveCount(25); // the whole match, then each club and its 11 players
+  const club = page.waitForRequest((r) => r.url().includes("/api/session?") && r.url().includes("focus_team=away"));
+  await focus.selectOption("away");
+  const clubUrl = new URL((await club).url());
+  expect([clubUrl.searchParams.get("focus_team"), clubUrl.searchParams.get("focus")]).toEqual(["away", null]);
+  await expect(page.getByTestId("status")).toContainText("Ready");
+  const value = (await focus.locator("optgroup").first().locator("option").nth(1).getAttribute("value"))!;
+  const [team, shirt] = value.split(":");
+  const request = page.waitForRequest((r) => r.url().includes("/api/session?") && r.url().includes("focus="));
+  await focus.selectOption(value);
+  const url = new URL((await request).url());
+  expect([url.searchParams.get("focus_team"), url.searchParams.get("focus")]).toEqual([team, shirt]);
+  await expect(page.getByTestId("status")).toContainText("Ready");
+  const results = await new AxeBuilder({ page }).analyze();
+  expect(results.violations).toEqual([]);
+});
+
+test("S34: the summary appears only when the clip has finished, in the session's language", async ({ page }) => {
+  await ready(page, "/?speed=40&speech=off&preset=final_whistle");
+  await expect(page.getByTestId("summary")).toBeHidden();
+  await playToEnd(page);
+  await expect(page.getByTestId("summary")).toBeVisible();
+  await expect(page.getByTestId("summary-line-1")).toHaveText("Full-time: Northgate 2, Harbour 1.");
+  await expect(page.getByTestId("summary-line-2")).toContainText("Minute 16: Marsh scores for Northgate");
+  const results = await new AxeBuilder({ page }).analyze();
+  expect(results.violations).toEqual([]);
+  await page.getByTestId("lang").selectOption("it");
+  await expect(page.getByTestId("status")).toContainText("Ready");
+  await expect(page.getByTestId("summary")).toBeHidden();
+  await playToEnd(page);
+  await expect(page.getByTestId("summary-line-1")).toHaveText("Finale: Northgate 2, Harbour 1.");
+  expect(await page.locator("#summary-lines").getAttribute("lang")).toBe("it");
+});
+
+test("S35: the studio analysis follows the summary, says who wrote it, and stays accessible", async ({ page }) => {
+  await ready(page, "/?speed=40&speech=off&preset=final_whistle");
+  await expect(page.getByTestId("analysis")).toBeHidden();
+  await playToEnd(page);
+  const session = await (await page.request.get("/api/session?preset=final_whistle")).json();
+  await expect(page.getByTestId("analysis-point-1")).toHaveText(session.analysis.points[0].text);
+  await expect(page.locator("#analysis-by")).toHaveText("Written by code from the summary."); // scripted mode: the code analyst
+  const results = await new AxeBuilder({ page }).analyze();
+  expect(results.violations).toEqual([]);
+});
+
+test("S33: the match stats follow the clock", async ({ page }) => {
+  await ready(page);
+  const session = await (await page.request.get("/api/session?preset=goal_1")).json();
+  const [first, last] = [session.stats[0], session.stats.at(-1)];
+  expect(last.home.passes).toBeGreaterThan(first.home.passes);
+  await expect(page.getByTestId("stats-passes-home")).toHaveText(`${first.home.passes_completed} of ${first.home.passes}`);
+  await expect(page.getByTestId("stats-possession-away")).toHaveText(`${first.away.possession}%`);
+  await playToEnd(page);
+  await expect(page.getByTestId("stats-passes-home")).toHaveText(`${last.home.passes_completed} of ${last.home.passes}`);
+  await expect(page.getByTestId("stats-possession-home")).toHaveText(`${last.home.possession}%`);
+  await expect(page.getByTestId("stats-avg_pass_m-home")).toHaveText(`${last.home.avg_pass_m.toFixed(1)} m`);
 });
 
 test("captions follow the voice and can be switched off", async ({ page }) => {
@@ -95,11 +174,19 @@ test("S8: the screen reader output writes into the aria-live region", async ({ p
   await page.getByTestId("output").selectOption("screenreader");
   await expect(page.getByTestId("status")).toContainText("Ready");
   await expect(page.getByTestId("live-region")).toHaveAttribute("aria-live", "polite");
+  await page.evaluate(() => {
+    const heard: string[] = ((window as unknown as { heard: string[] }).heard = []);
+    const region = document.getElementById("live-region")!;
+    new MutationObserver((records) => {
+      for (const record of records) for (const node of record.addedNodes) if (node.textContent) heard.push(node.textContent);
+    }).observe(region, { childList: true });
+  });
   await playToEnd(page);
-  const spoken = await page.locator('[data-testid^="transcript-cue-"] .cue-text').allTextContents();
-  const live = (await page.getByTestId("live-region").textContent()) ?? "";
-  expect(live).not.toBe("");
-  expect(spoken).toContain(live);
+  const session = await (await page.request.get("/api/session?preset=goal_1")).json();
+  const closing = session.recap.lines.join(" "); // scripted mode: the code points repeat the summary and are not read again
+  await expect(page.getByTestId("live-region")).toHaveText(closing);
+  const heard = await page.evaluate(() => (window as unknown as { heard: string[] }).heard);
+  expect(heard).toEqual([...session.cues.map((c: { text: string }) => c.text), closing]); // each cue, then the summary
 });
 
 test("S8: the space bar toggles play and pause", async ({ page }) => {
@@ -267,8 +354,8 @@ test("S29: the Azure voice is offered where clips exist and withdrawn for a lang
   await withClips(page, { en: 72, it: 0 });
   await ready(page);
   await expect(page.getByTestId("output").locator('option[value="azure"]')).toBeEnabled();
+  await expect(page.getByTestId("output")).toHaveValue("azure"); // the neural voice is the default where its clips exist
   await expect(page.getByTestId("voice-note")).toContainText("synthetic");
-  await page.getByTestId("output").selectOption("azure");
   await expect(page.getByTestId("status")).toContainText("Ready");
   await page.getByTestId("lang").selectOption("it");
   await expect(page.getByTestId("status")).toContainText("Ready");

@@ -34,7 +34,10 @@ Glossary and the map of the data contracts. Behaviour is in [`SPEC.md`](SPEC.md)
 | **Earcon** | A short ball sound for one event. Stereo position and pitch follow the ball. |
 | **Calm mode** | Only goals and whistles make a sound, at low volume; the voice is slower. |
 | **Session** | Everything the player needs for one window and one profile: cues, earcons, ball track, trace, report. |
-| **Profile** | The listener's settings: detail, language, ball sound, calm mode, speech rate (and, later, a player to follow). |
+| **Profile** | The listener's settings: detail, language, ball sound, calm mode, speech rate, and a player to follow (`focus`, `focus_team`, SPEC §17). |
+| **Match statistics** | Possession (share of passes), passes completed, pass accuracy, average pass length, shots, shots on target and balls won, per team, counted by code from kick-off (SPEC §18). Never written by a model and never spoken. |
+| **Recap** | The code-written summary of the match up to the end of a window: score, goals with assists, the pressure before each goal, the numbers (SPEC §19). |
+| **Analyst** | The second agent: it writes three or four studio points about a window, each citing one source line (a recap line, a cue, the statistics at a minute); code rejects a point whose names or numbers are not in that line (SPEC §20). |
 | **Cue sheet** | The machine-readable, versioned export of a session for graphics and captioning systems (SPEC §13). Items are an audio description, its caption, or a ball sound. |
 | **Replay** | The describer mode `replay`: a reply a Foundry model gave earlier to the same request, read from a JSON file, checked again by the verifier on every session. No model call (SPEC §11, D12). |
 | **Recorded reply** | The model's text stored under a key made of the match seed, language, attempt, moments, issues and instructions. A changed prompt changes the key. |
@@ -51,7 +54,8 @@ Glossary and the map of the data contracts. Behaviour is in [`SPEC.md`](SPEC.md)
 | Description | `FactRef`, `Description` |
 | Stakes | `Cue.context`, `app/stakes.py`: the code-written sentence on what the score now means (SPEC §5) |
 | Listener | `Profile`, `Preset` |
-| Plan | `Cue`, `Earcon`, `Dropped`, `BallPoint`, `TraceStep`, `PriorityStats`, `Report`, `Session` |
+| Plan | `Cue`, `Earcon`, `Dropped`, `BallPoint`, `TraceStep`, `PriorityStats`, `Report`, `TeamStats`, `StatsPoint`, `Recap`, `AnalysisPoint`, `Analysis`, `Session` |
+| MCP (SPEC §16) | `Commentary`, `MatchStats`, `Recap`, and `Preset`, `MatchHeader`, `Moment`, `Event` as tool results |
 | HTTP | `TtsRequest`, `VoiceSupport`, `ErrorResponse` |
 
-Every model rejects unknown fields and is frozen. `CueSheet`, `CueSheetDescription`, `CueSheetCaption` and `CueSheetBallSound` are the cue sheet (HTTP group). Coming with the tickets: `Profile.focus` and `Profile.focus_team` (T09).
+Every model rejects unknown fields and is frozen. `CueSheet`, `CueSheetDescription`, `CueSheetCaption` and `CueSheetBallSound` are the cue sheet (HTTP group).

@@ -1,6 +1,6 @@
 # T02a. Grounded verifier
 
-**Depends on:** none  **Acceptance:** S3 (extended), S19, S20  **Spec:** §5  **Decision:** D9  **Judging:** criterion 1 (quality software practice) and the trust claim of the whole product
+**Depends on:** none  **Acceptance:** S3 (extended), S19, S20  **Spec:** §5  **Decision:** D9
 
 ## Goal
 
@@ -14,7 +14,7 @@ Before a model writes any commentary, the gate that decides what reaches a liste
 4. Two templates changed to fit the contract (the assist is a canonical clause; "wide of the goal" lost "goal").
 5. `backend/tests/test_grounding.py`: generated adversarial mutations (S19), cross-moment text, a lying describer and a crashing check through the whole pipeline, template variants, random conforming sentences and spelling variants (S20), hand-written corpora through the pipeline, a policy test that shared words stay neutral, and a test that outcome words belong to one kind of event.
 6. `app.evaluate` (with `app.corpora`) reports false acceptance, false rejection and fallback separately, with denominators, in `docs/evaluation.md`.
-7. An independent adversarial review, two rounds, by a separate agent that attacked the verifier and the pipeline (findings below).
+7. An adversarial review by a separate AI review agent that attacked the verifier and the pipeline (findings below).
 
 ## Verification
 
@@ -32,7 +32,7 @@ cd backend; .\.venv\Scripts\python.exe -m app.evaluate --seeds 20 --write ..\doc
 - Italian inflection (articles, contractions) is stricter than English.
 - A describer adapter must produce the refs the verifier expects (`describer.facts`), or fill them itself.
 
-## Independent review: findings and disposition
+## Adversarial review: findings and disposition
 
 | Round | Finding | Disposition |
 |---|---|---|

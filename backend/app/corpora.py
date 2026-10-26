@@ -4,7 +4,7 @@ Placeholders are the fields of `describer.facts`. Every sentence is true for its
 tests safety, they test how much valid wording the closed vocabulary of SPEC §5 turns away.
 
 NATURAL was written as a commentator would, without looking at the vocabulary (two authors: the
-project author and an independent reviewer). VOCAB_AWARE was written by the independent reviewer
+project author and a separate AI review agent). VOCAB_AWARE was written by that review agent
 with the per-key word lists in hand. Entries under "goal_assist" without {assist} also serve plain goals.
 """
 

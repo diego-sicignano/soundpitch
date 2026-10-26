@@ -6,11 +6,11 @@ Audio-first match companion for blind and low-vision fans, built for the Microso
 
 The spec is the authority; code follows it.
 
-- [`SPEC.md`](SPEC.md): behaviour, pinned numbers, UI test ids, acceptance rows `S1` to `S32`.
+- [`SPEC.md`](SPEC.md): behaviour, pinned numbers, UI test ids, acceptance rows `S1` to `S35`.
 - [`CONTEXT.md`](CONTEXT.md): glossary and the map of the contracts. `backend/app/contracts.py` is the single source of the field-level contracts.
-- [`ROADMAP.md`](ROADMAP.md) and [`docs/tickets/`](docs/tickets/): the work items `T01` to `T11`, each citing the acceptance rows it satisfies.
+- [`ROADMAP.md`](ROADMAP.md) and [`docs/tickets/`](docs/tickets/): the work items `T02a` to `T14`, each citing the acceptance rows it satisfies.
 - [`docs/DECISIONS.md`](docs/DECISIONS.md): why things are the way they are.
-- [`docs/hackathon/`](docs/hackathon/): our summary of the official rules (the verbatim text is in the owner's git-ignored `docs/hackathon/_local/` and at the source named in its README), the compliance record and the submission checklist. When a choice depends on a rule, cite the section.
+- The [Official Rules](https://github.com/microsoft/insidethegamehackathon): when a choice depends on a rule, cite the section.
 
 Rules:
 
@@ -62,11 +62,7 @@ A task is done when every command above exits 0 and the output is read, not assu
 
 ## Approval gates
 
-Ask the owner before anything that spends money or is hard to undo: a live model call or evaluation run (`foundry_run`, replay recording), creating or changing Azure resources, a Speech resource, a deployment, a commit, a history rewrite, a push, changing a repository's visibility. Regression tests never use a real model: they use a fake client.
-
-## Session hygiene
-
-One ticket per session; `/clear` between tickets. When compacting, keep the list of modified files, the active ticket and the verification commands above. Read a file again before editing it if it may have changed.
+Ask the maintainer before anything that spends money or is hard to undo: a live model call or evaluation run (`foundry_run`, replay recording), creating or changing Azure resources, a Speech resource, a deployment, a commit, a history rewrite, a push, changing a repository's visibility. Regression tests never use a real model: they use a fake client.
 
 ## Run
 

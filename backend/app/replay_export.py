@@ -4,7 +4,7 @@
     python -m app.replay_export --check
 
 It only reads a local SQLite file and writes a JSON file; it never contacts Azure. The replies come from
-`python -m app.foundry_run` (a live, billable run that needs the owner's approval). `--check` prints how
+`python -m app.foundry_run` (a live, billable run, started by hand). `--check` prints how
 many requests (preset x detail x language, first attempt) the replay file covers and exits 1 if not all.
 """
 

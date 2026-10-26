@@ -765,7 +765,7 @@ def test_a_sentence_is_either_verified_as_written_or_replaced_by_the_template(co
                 assert (cue.text.removesuffix(" " + cue.context) if cue.context else cue.text) in (full_ok if cue.variant == "full" else short_ok)
 
 
-# ---- round 2 of the independent review ------------------------------------------------------------
+# ---- adversarial inputs: relation words and moved phrases ----------------------------------------
 
 RELATION_WORDS = {"en": {"for", "by", "of", "to", "in", "with"}, "it": {"per", "di", "del", "da", "con", "al"}}
 FLIPPING = {"en": ["on", "at", "against"], "it": ["su", "al", "contro"]}

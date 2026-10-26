@@ -4,7 +4,7 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 
-from app import main, tts
+from app import clips, main, tts
 from app.main import app
 
 client = TestClient(app)
@@ -21,15 +21,17 @@ ENV = (
 
 
 @pytest.fixture(autouse=True)
-def clean(monkeypatch):
+def clean(monkeypatch, tmp_path):
+    monkeypatch.setattr(clips, "CLIPS_DIR", tmp_path / "no-clips")  # the live path is what these tests check
+    monkeypatch.setattr(clips, "_STORE", None)  # restored after the test, so others see the real clips
     for name in ENV + ("SOUNDPITCH_LOG_FORWARDED",):
         monkeypatch.delenv(name, raising=False)
     main.SHAPES.clear()
     tts.reset()
-    main._session.cache_clear()
+    main.session_for.cache_clear()
     yield
     tts.reset()
-    main._session.cache_clear()
+    main.session_for.cache_clear()
 
 
 class Azure:

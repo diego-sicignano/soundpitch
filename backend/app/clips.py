@@ -17,7 +17,8 @@ from pathlib import Path
 
 log = logging.getLogger("soundpitch.clips")
 
-CLIPS_DIR = Path(__file__).resolve().parent / "audio"
+# SOUNDPITCH_CLIPS_DIR points elsewhere, for a server or a test that must run without the stored clips
+CLIPS_DIR = Path(os.environ.get("SOUNDPITCH_CLIPS_DIR") or Path(__file__).resolve().parent / "audio")
 MANIFEST = "manifest.json"
 VERSION = 1
 LANGS = ("en", "it")

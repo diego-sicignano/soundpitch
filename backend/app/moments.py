@@ -1,6 +1,6 @@
 """Interpret: group events into prioritised moments (SPEC §4)."""
 
-from app.contracts import Detail, Event, Moment, MomentKind
+from app.contracts import Detail, Event, Moment, MomentKind, Profile, Team
 from app.pitch import event_progress
 
 PASS_LIKE = {"pass", "dribble", "long_ball", "clearance"}
@@ -19,6 +19,18 @@ SINGLE: dict[str, tuple[MomentKind, int]] = {
     "throw_in": ("throw_in", 1),
 }
 REMINDER_MINUTES = range(10, 90, 10)
+Focus = tuple[Team, int | None]  # the side to follow, and the shirt when it is one player (SPEC §17)
+
+
+def focus_of(profile: Profile) -> Focus | None:
+    return (profile.focus_team, profile.focus) if profile.focus_team else None
+
+
+def involves(event: Event, focus: Focus | None) -> bool:
+    """The event is the followed club's, or the followed player is its actor or receiver."""
+    if focus is None or event.team != focus[0]:
+        return False
+    return focus[1] is None or focus[1] in (event.player, event.target)
 
 
 def _single(event: Event, assist: Event | None) -> tuple[MomentKind, int, list[int]] | None:
@@ -43,8 +55,9 @@ def _is_assist(event: Event, following: Event | None) -> bool:
     )
 
 
-def detect_moments(events: list[Event], detail: Detail) -> list[Moment]:
-    """Moments of a window of events, filtered by detail level (priority 3 is always kept)."""
+def detect_moments(events: list[Event], detail: Detail, focus: Focus | None = None) -> list[Moment]:
+    """Moments of a window of events, filtered by detail level (priority 3 is always kept). A followed player's
+    moments are raised by one priority, up to 2, before the filter (SPEC §17)."""
     raw: list[tuple[int, int, MomentKind, int, object, list[int]]] = []  # t, order, kind, prio, team, ids
     run: list[Event] = []
 
@@ -82,6 +95,14 @@ def detect_moments(events: list[Event], detail: Detail) -> list[Moment]:
                 latest = max((e for e in events if e.t <= t), key=lambda e: e.id)
                 raw.append((t, latest.id, "score_update", 2, None, [latest.id]))
 
+    if focus:
+        by_id = {e.id: e for e in events}
+        raw = [
+            (t, order, kind, min(priority + 1, 2), team, ids)
+            if priority < 3 and kind != "score_update" and any(involves(by_id[i], focus) for i in ids)
+            else (t, order, kind, priority, team, ids)
+            for t, order, kind, priority, team, ids in raw
+        ]
     raw.sort(key=lambda r: (r[0], r[1]))
     kept = [r for r in raw if r[3] == 3 or r[3] >= MIN_PRIORITY[detail]]
     return [

@@ -13,14 +13,14 @@ The window `goal_1` (match seconds 815 to 950, "Goal 1: Northgate, minute 16") a
 | Step | Module | What happens | Example |
 |---|---|---|---|
 | Ingest | `match_gen.py` | `generate_match(424242)` returns the whole match, 896 events, one every 3 to 9 seconds, goals pinned at 16', 52', 78' | event 159: Adeyemi passes to Marsh; event 160: Marsh scores, score 1-0 |
-| Interpret | `moments.py` | consecutive events become **moments** with a priority 0 to 3; a goal is priority 3 (must say) | moment 3, `goal`, events `[159, 160]` |
+| Interpret | `moments.py`, `stats.py` | consecutive events become **moments** with a priority 0 to 3, raised for a followed club or player; a goal is priority 3 (must say). Code also counts the match statistics | moment 3, `goal`, events `[159, 160]`; possession 59%, 68% in the last five minutes |
 | Facts | `describer.facts` | the code derives what a sentence about this moment may state, as **refs** `(event, field, value)` and as ready-made **phrases** | key `goal_assist`; `Marsh`, `Northgate`, `set up by Adeyemi`, `Northgate 1, Harbour 0` |
 | Explain | `describer.py` / `foundry.py` / `replay.py` | a describer returns a `full` and a `short` sentence per moment; **its refs are replaced by the code's** | "It's in! Marsh finishes for Northgate, set up by Adeyemi. Northgate 1, Harbour 0." |
 | Verify | `verifier.py` | grounding checks (below); a failure goes back with its issues, at most twice more | accepted |
 | Fallback | `describer.TemplateDescriber` | for moments still rejected after three attempts; it must itself verify or the session fails | status `fallback` on the cue |
-| Context | `stakes.py`, `pipeline.apply_context` | after verification, code appends one sentence on what the score now means (goal, half-time, full-time only) to the `full` text and keeps it in `Cue.context` | "The opening goal of the match." |
+| Context | `stakes.py`, `pipeline.apply_context`, `recap.py` | after verification, code appends one sentence on what the score now means (goal, half-time, full-time only) to the `full` text and keeps it in `Cue.context`; `recap.py` writes the summary of the match so far | "The opening goal of the match."; "Minute 16: Marsh scores for Northgate, set up by Adeyemi. Northgate had 68% of the passes in the five minutes before." |
 | Render | `timing.py`, `render.py` | speech is planned into the silences by priority, never overlapping; one earcon per event; WebVTT | cue 3 at 100.3 s to 107.9 s |
-| Serve | `main.py`, `cuesheet.py` | `/api/session`, `/api/session.vtt`, `/api/cuesheet`, the static page | |
+| Serve | `main.py`, `cuesheet.py`, `mcp_server.py` | `/api/session`, `/api/session.vtt`, `/api/cuesheet`, the static page; the same data as read-only MCP tools for an AI agent | |
 
 ## Reading order
 
@@ -29,11 +29,11 @@ The window `goal_1` (match seconds 815 to 950, "Goal 1: Northgate, minute 16") a
 3. `moments.py`: events to moments, priorities and detail levels.
 4. `describer.py`: the English and Italian templates (`LEX`), `facts`, and the test describers.
 5. `verifier.py`: the heart of the safety argument. Read `Verifier.check`, `_grounding`, `_position`.
-6. `pipeline.py`: `describe_step`, `verify_step`, `fallback_step`, `assemble_session`; the retry loop is nine lines. `stakes.py` is the score-context sentence (about 80 lines).
+6. `pipeline.py`: `describe_step`, `verify_step`, `fallback_step`, `assemble_session`; the retry loop is nine lines. `stakes.py` is the score-context sentence and `recap.py` the summary (about 80 lines each); `stats.py` counts the statistics.
 7. `timing.py`, `render.py`: planning speech into silence; the ball sound; captions.
 8. `foundry.py`, `usage.py`: the live model behind its prompt, its parser and its cost ledger. `replay.py`: recorded replies.
 9. `workflow.py`: the same steps as a Microsoft Agent Framework graph.
-10. `main.py`, `tts.py`, `cuesheet.py`, then `frontend/app.js`.
+10. `main.py`, `tts.py`, `cuesheet.py`, `mcp_server.py`, then `frontend/app.js`.
 
 ## The model boundary
 
@@ -90,6 +90,9 @@ A goal says who scored and the score; a listener should also hear what it means.
 | Workflow equals plain pipeline | `test_workflow.py` (S13, needs the packages) |
 | Cue sheet and its schema | `test_cuesheet.py` (S15) |
 | Score context | `test_stakes.py`, the S31 test in `e2e/soundpitch.spec.ts` |
+| Club and player focus | `test_focus.py` (S18) |
+| Match statistics and recap | `test_stats.py` (S33), `test_recap.py` (S34), their e2e tests |
+| MCP tools and prompt | `test_mcp.py` (S17) |
 | Voice guard | `test_tts_guard.py`, `test_api.py` (S22, S7) |
 | Page behaviour, language marking and axe | `e2e/soundpitch.spec.ts` (S8, S9, S23) |
 

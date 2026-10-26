@@ -6,7 +6,7 @@ const server = (port: number, scenario: string) => ({
   command: `${python} -m uvicorn app.main:app --port ${port}`,
   cwd: "backend",
   url: `http://localhost:${port}/api/health`,
-  env: { SOUNDPITCH_LLM: scenario },
+  env: { SOUNDPITCH_LLM: scenario, SOUNDPITCH_CLIPS_DIR: "data/no-clips" }, // the page tests mock /api/voice when they need clips
   reuseExistingServer: true,
 });
 

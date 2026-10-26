@@ -28,6 +28,12 @@ def test_presets():
     assert [p.id for p in presets] == ["kickoff", "goal_1", "goal_2", "goal_3", "final_whistle"]
 
 
+def test_a_speech_rate_is_kept_to_two_decimals_so_near_values_share_one_session():
+    a = client.get("/api/session", params={"rate": 1.2}).json()
+    b = client.get("/api/session", params={"rate": 1.20004}).json()
+    assert a["profile"]["rate"] == b["profile"]["rate"] == 1.2 and a == b
+
+
 def test_session_is_a_valid_contract_and_honours_parameters():
     response = client.get("/api/session", params={"preset": "goal_2", "lang": "it", "detail": "full", "rate": 1.2})
     assert response.status_code == 200
@@ -40,11 +46,11 @@ def test_session_is_a_valid_contract_and_honours_parameters():
 def test_session_scenarios_flow_through_the_api(monkeypatch):
     from app import main
 
-    main._session.cache_clear()
+    main.session_for.cache_clear()
     monkeypatch.setenv("SOUNDPITCH_LLM", "always_bad")
     report = client.get("/api/session", params={"preset": "goal_3"}).json()["report"]
     assert report["fallback"] == report["moments"] and report["attempts"] == 3
-    main._session.cache_clear()
+    main.session_for.cache_clear()
 
 
 def test_unknown_preset_and_invalid_parameters():
@@ -157,7 +163,7 @@ def test_an_unhandled_error_is_a_json_500_that_still_carries_the_security_header
     def boom(*args, **kwargs):
         raise RuntimeError("secret-detail-that-must-not-leak")
 
-    monkeypatch.setattr(main, "_session", boom)
+    monkeypatch.setattr(main, "session_for", boom)
     response = TestClient(app, raise_server_exceptions=False).get("/api/session")
     assert response.status_code == 500 and response.json()["code"] == "internal_error"
     assert response.headers["x-content-type-options"] == "nosniff"
@@ -173,11 +179,11 @@ def test_a_mistyped_llm_mode_is_a_clear_503_that_names_the_setting_and_not_its_v
     from app import main
 
     monkeypatch.setenv("SOUNDPITCH_LLM", MISTYPED)
-    main._session.cache_clear()
+    main.session_for.cache_clear()
     try:
         response = client.get(path)
     finally:
-        main._session.cache_clear()
+        main.session_for.cache_clear()
     assert response.status_code == 503 and response.json()["code"] == "llm_not_configured"
     message = response.json()["message"]
     assert "SOUNDPITCH_LLM" in message and "replay" in message and "scripted" in message  # what to use instead
@@ -196,11 +202,11 @@ def test_a_mistyped_orchestrator_is_a_503_that_does_not_echo_its_value(monkeypat
     from app import main
 
     monkeypatch.setenv("SOUNDPITCH_ORCHESTRATOR", MISTYPED)
-    main._session.cache_clear()
+    main.session_for.cache_clear()
     try:
         response = client.get("/api/session")
     finally:
-        main._session.cache_clear()
+        main.session_for.cache_clear()
     assert response.status_code == 503 and response.json()["code"] == "llm_not_configured"
     assert "SOUNDPITCH_ORCHESTRATOR" in response.json()["message"] and MISTYPED not in response.text
 
@@ -220,12 +226,12 @@ def test_every_supported_llm_mode_still_serves_a_session(monkeypatch, mode):
     from app import main
 
     monkeypatch.setenv("SOUNDPITCH_LLM", mode)
-    main._session.cache_clear()
+    main.session_for.cache_clear()
     try:
         assert client.get("/api/session", params={"preset": "goal_1"}).status_code == 200
         assert client.get("/api/health").json()["llm"] == mode
     finally:
-        main._session.cache_clear()
+        main.session_for.cache_clear()
 
 
 def test_the_page_declares_an_icon_so_the_browser_does_not_request_a_missing_favicon():

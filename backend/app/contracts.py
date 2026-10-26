@@ -2,7 +2,7 @@
 
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class Contract(BaseModel):
@@ -116,6 +116,14 @@ class Profile(Contract):
     earcons: bool = True
     calm: bool = False
     rate: float = Field(default=1.0, ge=0.5, le=2.0)
+    focus: int | None = Field(default=None, ge=1, le=99)  # shirt of the player to follow (SPEC §17)
+    focus_team: Team | None = None  # alone: the club to follow
+
+    @model_validator(mode="after")
+    def _focus_needs_its_team(self) -> "Profile":
+        if self.focus is not None and self.focus_team is None:
+            raise ValueError("a focus shirt needs its focus_team")
+        return self
 
 
 class Cue(Contract):
@@ -158,7 +166,7 @@ class BallPoint(Contract):
 
 
 class TraceStep(Contract):
-    step: Literal["moment_detector", "describer", "verifier", "timing"]
+    step: Literal["moment_detector", "describer", "verifier", "timing", "analyst", "analysis_check"]
     status: Literal["ok", "failed"]
     attempt: int
     detail: str
@@ -183,6 +191,58 @@ class Report(Contract):
     by_priority: dict[str, PriorityStats]
 
 
+class TeamStats(Contract):
+    """Match statistics of one team so far, counted by code from the events (SPEC §18)."""
+
+    possession: int = Field(ge=0, le=100)  # share of passes, whole percent
+    recent_possession: int = Field(ge=0, le=100)  # the same share over the last five minutes
+    passes: int
+    passes_completed: int
+    pass_accuracy: int = Field(ge=0, le=100)
+    avg_pass_m: float
+    shots: int
+    shots_on_target: int
+    ball_won: int
+
+
+class StatsPoint(Contract):
+    t_ms: int  # relative to the window start; 0 holds the counts before the window
+    home: TeamStats
+    away: TeamStats
+
+
+class MatchStats(Contract):
+    """The statistics from kick-off to the end of a minute, for the MCP tool `get_stats` (SPEC §16, §18)."""
+
+    minute: int = Field(ge=1, le=90)
+    home: TeamStats
+    away: TeamStats
+
+
+class Recap(Contract):
+    """The code-written summary of the match up to the end of a window (SPEC §19)."""
+
+    preset: str
+    lang: Lang
+    minute: int = Field(ge=1, le=90)  # the match minute the summary reaches
+    lines: list[str]
+
+
+class AnalysisPoint(Contract):
+    text: str = Field(min_length=1, max_length=300)
+    source: str = Field(pattern=r"^(recap|stats):\d+$")  # the one line every name and number must come from
+
+
+class Analysis(Contract):
+    """The studio points of the Analyst agent, each checked against the line it cites (SPEC §20)."""
+
+    by: Literal["model", "code"]
+    status: Literal["verified", "fallback"]
+    attempts: int
+    rejected: int  # points the check refused, over all attempts
+    points: list[AnalysisPoint]
+
+
 class Session(Contract):
     preset: str
     title: str
@@ -197,6 +257,9 @@ class Session(Contract):
     track: list[BallPoint]
     trace: list[TraceStep]
     report: Report
+    stats: list[StatsPoint]
+    recap: Recap
+    analysis: Analysis | None = None  # set by the analysis step once the session is assembled (SPEC §20)
 
 
 class _TimedText(Contract):
@@ -208,6 +271,15 @@ class _TimedText(Contract):
     text: str
     status: Literal["verified", "fallback"]
     context: str | None = None  # SPEC §13: the code-written sentence that ends `text`, if any
+
+
+class Commentary(Contract):
+    """The verified cues and the report of a session, for the MCP tool `get_commentary` (SPEC §16)."""
+
+    preset: str
+    lang: Lang
+    cues: list[Cue]
+    report: Report
 
 
 class CueSheetDescription(_TimedText):

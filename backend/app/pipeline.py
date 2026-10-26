@@ -3,10 +3,20 @@
 import itertools
 import os
 
-from app import stakes
-from app.contracts import Description, Match, Moment, Preset, Profile, Report, Session, TraceStep
+from app import analysis, recap, stakes, stats
+from app.contracts import (
+    Description,
+    Event,
+    Match,
+    Moment,
+    Preset,
+    Profile,
+    Report,
+    Session,
+    TraceStep,
+)
 from app.describer import Context, Describer, FlawedDescriber, TemplateDescriber
-from app.moments import detect_moments
+from app.moments import detect_moments, focus_of
 from app.render import earcons, pan_of, track
 from app.timing import Candidate, plan
 from app.verifier import Verifier
@@ -191,7 +201,7 @@ def verified_descriptions(
 ) -> dict[int, tuple[Description, str]]:
     """What the pipeline accepts for a window, by moment: the verified descriptions or the template fallback."""
     ctx = Context(match, profile.lang)
-    moments = detect_moments(window_of(match, preset), profile.detail)
+    moments = detect_moments(window_of(match, preset), profile.detail, focus_of(profile))
     accepted, _ = _verified(moments, ctx, describer, [])
     return apply_context(moments, accepted, ctx)[0]
 
@@ -213,7 +223,7 @@ def apply_context(
     return spoken, contexts
 
 
-def window_of(match: Match, preset: Preset) -> list:
+def window_of(match: Match, preset: Preset) -> list[Event]:
     return [e for e in match.events if preset.from_s <= e.t <= preset.to_s]
 
 
@@ -286,13 +296,36 @@ def assemble_session(
         track=track(window, preset.from_s),
         trace=trace,
         report=report,
+        stats=stats.points(match.events, preset.from_s, preset.to_s),
+        recap=recap.build(match, preset, profile.lang),
     )
 
 
-def build_session(match: Match, preset: Preset, profile: Profile, describer: Describer) -> Session:
+def analyst_from_env() -> "analysis.Analyst":
+    """The analyst for SOUNDPITCH_LLM (SPEC §20): code, a flawed test analyst, or the recorded live Analyst."""
+    mode = llm_mode()
+    if mode == "scripted":
+        return analysis.CodeAnalyst()
+    if mode == "bad_then_good":
+        return analysis.FlawedAnalyst(bad_attempts=1)
+    if mode == "always_bad":
+        return analysis.FlawedAnalyst(bad_attempts=MAX_ATTEMPTS)
+    return analysis.shared_replay()  # replay and foundry: the live Analyst runs only in app.analyst_run
+
+
+def analysis_request(match: Match, preset: Preset, session: Session) -> "analysis.Request":
+    return analysis.Request(match, preset, session.lang, session.recap, session.cues)
+
+
+def build_session(
+    match: Match, preset: Preset, profile: Profile, describer: Describer, analyst: "analysis.Analyst | None" = None
+) -> Session:
     ctx = Context(match, profile.lang)
     trace: list[TraceStep] = []
-    moments = detect_moments(window_of(match, preset), profile.detail)
+    moments = detect_moments(window_of(match, preset), profile.detail, focus_of(profile))
     trace.append(TraceStep(step="moment_detector", status="ok", attempt=1, detail=f"{len(moments)} moments"))
     accepted, attempts = _verified(moments, ctx, describer, trace)
-    return assemble_session(match, preset, profile, ctx, moments, accepted, attempts, trace)
+    session = assemble_session(match, preset, profile, ctx, moments, accepted, attempts, trace)
+    trace = list(session.trace)
+    result = analysis.analyse(analysis_request(match, preset, session), analyst or analyst_from_env(), trace)
+    return session.model_copy(update={"analysis": result, "trace": trace})

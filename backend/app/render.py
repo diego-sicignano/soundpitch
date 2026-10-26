@@ -1,6 +1,7 @@
 """Render: sonification (earcons), the ball track and WebVTT captions (SPEC §7)."""
 
 from app.contracts import BallPoint, Cue, Earcon, Event, Profile
+from app.moments import focus_of, involves
 from app.pitch import event_progress
 
 EARCON: dict[str, tuple[str, float]] = {
@@ -25,6 +26,7 @@ EARCON: dict[str, tuple[str, float]] = {
 }
 CALM_KINDS = {"goal", "whistle", "whistle_long"}
 CALM_GAIN = 0.3
+FOCUS_GAIN = 1.5  # the followed player's sounds are louder (SPEC §17)
 
 
 def pan_of(event: Event) -> float:
@@ -34,6 +36,7 @@ def pan_of(event: Event) -> float:
 def earcons(events: list[Event], window_start_s: int, profile: Profile) -> list[Earcon]:
     if not profile.earcons:
         return []
+    focus = focus_of(profile)
     result = []
     for event in events:
         kind, gain = EARCON[event.kind]
@@ -41,6 +44,8 @@ def earcons(events: list[Event], window_start_s: int, profile: Profile) -> list[
             if kind not in CALM_KINDS:
                 continue
             gain = CALM_GAIN
+        if involves(event, focus):
+            gain = min(1.0, round(gain * FOCUS_GAIN, 3))
         progress = event_progress(event) if event.team else 50
         result.append(
             Earcon(

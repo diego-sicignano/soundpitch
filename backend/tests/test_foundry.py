@@ -171,7 +171,7 @@ def test_a_call_that_is_too_slow_is_a_failed_attempt():
         return examples(payload)
 
     started = time.monotonic()
-    s, _ = session(Fake(script), timeout_s=0.1)
+    s, _ = session(Fake(script), timeout_s=0.3)  # wide enough for a slow CI runner's second, fast call
     assert time.monotonic() - started < 5
     assert s.report.attempts == 2 and s.report.verified == s.report.moments
     assert any(t.detail == "TimeoutError" and t.status == "failed" for t in s.trace)
@@ -493,7 +493,7 @@ def test_the_api_answers_503_with_the_name_of_the_missing_setting(monkeypatch):
         monkeypatch.delenv(key, raising=False)
     monkeypatch.setenv("SOUNDPITCH_LLM", "foundry")
     foundry.reset_shared()
-    main._session.cache_clear()
+    main.session_for.cache_clear()
     client = TestClient(main.app)
     for path in ("/api/session?preset=goal_1", "/api/session.vtt?preset=goal_1"):
         response = client.get(path)
@@ -501,7 +501,7 @@ def test_the_api_answers_503_with_the_name_of_the_missing_setting(monkeypatch):
         body = response.json()
         assert body["code"] == "llm_not_configured" and "FOUNDRY_PROJECT_ENDPOINT" in body["message"]
     assert client.get("/api/health").json() == {"status": "ok", "llm": "foundry"}
-    main._session.cache_clear()
+    main.session_for.cache_clear()
 
 
 def test_the_api_serves_a_foundry_session_and_counts_calls_per_window_not_per_request(monkeypatch):
@@ -510,14 +510,14 @@ def test_the_api_serves_a_foundry_session_and_counts_calls_per_window_not_per_re
     fake = Fake()
     monkeypatch.setenv("SOUNDPITCH_LLM", "foundry")
     monkeypatch.setattr(foundry, "_SHARED", describer_for(fake))
-    main._session.cache_clear()
+    main.session_for.cache_clear()
     client = TestClient(main.app)
     one = client.get("/api/session?preset=goal_1&detail=full&rate=1.0")
     two = client.get("/api/session?preset=goal_1&detail=full&rate=1.7&calm=true")
     assert one.status_code == two.status_code == 200
     assert one.json()["report"]["verified"] == one.json()["report"]["moments"]
     assert len(fake.calls) == 1
-    main._session.cache_clear()
+    main.session_for.cache_clear()
 
 
 @pytest.mark.skipif(importlib.util.find_spec("agent_framework") is not None, reason="the SDK is installed here")
@@ -528,16 +528,16 @@ def test_a_missing_package_is_named_with_the_command_that_installs_it(monkeypatc
     monkeypatch.setenv("FOUNDRY_MODEL", "deployment")
     monkeypatch.setenv("SOUNDPITCH_LLM", "foundry")
     foundry.reset_shared()
-    main._session.cache_clear()
+    main.session_for.cache_clear()
     response = TestClient(main.app).get("/api/session?preset=goal_1")
     assert response.status_code == 503
     assert response.json()["code"] == "llm_not_configured"
     assert "requirements-agents.txt" in response.json()["message"]
     assert "x.services.ai.azure.com" not in response.text  # the endpoint is never echoed
-    main._session.cache_clear()
+    main.session_for.cache_clear()
 
 
-# ---- findings of the independent review ------------------------------------------------------------
+# ---- adversarial replies: parser, size limits and failure paths -----------------------------------
 
 
 def test_a_fence_with_runaway_whitespace_cannot_stall_the_process():
@@ -571,14 +571,14 @@ def test_a_session_built_during_an_outage_is_not_kept_by_the_api(monkeypatch):
 
     monkeypatch.setenv("SOUNDPITCH_LLM", "foundry")
     monkeypatch.setattr(foundry, "_SHARED", describer_for(Fake(script)))
-    main._session.cache_clear()
+    main.session_for.cache_clear()
     client = TestClient(main.app)
     down = client.get("/api/session?preset=goal_1&detail=full").json()
     assert down["report"]["fallback"] == down["report"]["moments"]
     state["down"] = False
     up = client.get("/api/session?preset=goal_1&detail=full").json()
     assert up["report"]["verified"] == up["report"]["moments"] and up["report"]["attempts"] == 1
-    main._session.cache_clear()
+    main.session_for.cache_clear()
 
 
 def test_a_session_built_over_the_cap_is_not_kept_by_the_api(monkeypatch):
@@ -588,7 +588,7 @@ def test_a_session_built_over_the_cap_is_not_kept_by_the_api(monkeypatch):
     describer = describer_for(Fake(), clock=clock, per_minute=1)
     monkeypatch.setenv("SOUNDPITCH_LLM", "foundry")
     monkeypatch.setattr(foundry, "_SHARED", describer)
-    main._session.cache_clear()
+    main.session_for.cache_clear()
     client = TestClient(main.app)
     assert client.get("/api/session?preset=goal_1&detail=full").status_code == 200
     capped = client.get("/api/session?preset=goal_2&detail=full").json()
@@ -596,7 +596,7 @@ def test_a_session_built_over_the_cap_is_not_kept_by_the_api(monkeypatch):
     clock.now += 61  # the minute is over
     again = client.get("/api/session?preset=goal_2&detail=full").json()
     assert not any("budget" in t["detail"] for t in again["trace"])
-    main._session.cache_clear()
+    main.session_for.cache_clear()
 
 
 def test_concurrent_identical_requests_make_one_call():

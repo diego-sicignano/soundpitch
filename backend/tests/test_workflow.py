@@ -65,16 +65,19 @@ def test_the_workflow_builds_the_same_session_as_the_plain_pipeline(factory, pre
 @needs_sdk
 def test_the_trace_names_the_executors_and_the_retry_loop_shows():
     clean = workflow.build_session(MATCH, PRESETS["goal_1"], Profile(), TemplateDescriber())
-    assert [t.executor for t in clean.trace] == ["MomentDetector", "Describer", "Verifier", "TimingPlanner"]
+    assert [t.executor for t in clean.trace] == [
+        *["MomentDetector", "Describer", "Verifier", "TimingPlanner", "Analyst", "AnalysisChecker"],
+    ]
     retried = workflow.build_session(MATCH, PRESETS["goal_1"], Profile(), FlawedDescriber(bad_attempts=1))
     assert [t.executor for t in retried.trace] == [
         *["MomentDetector", "Describer", "Verifier", "Describer", "Verifier", "TimingPlanner"],
+        *["Analyst", "AnalysisChecker"],
     ]
     assert [t.attempt for t in retried.trace if t.executor == "Describer"] == [1, 2]
     failed = workflow.build_session(MATCH, PRESETS["goal_1"], Profile(), FlawedDescriber(bad_attempts=3))
     assert [t.executor for t in failed.trace] == [
         *["MomentDetector", "Describer", "Verifier", "Describer", "Verifier", "Describer", "Verifier"],
-        *["Fallback", "TimingPlanner"],
+        *["Fallback", "TimingPlanner", "Analyst", "AnalysisChecker"],
     ]
     assert failed.report.fallback == failed.report.moments and failed.report.attempts == 3
     plain = build_session(MATCH, PRESETS["goal_1"], Profile(), TemplateDescriber())
@@ -140,15 +143,15 @@ def test_concurrent_requests_each_get_their_own_correct_session():
 
 @needs_sdk
 def test_the_api_serves_the_workflows_session_when_selected(monkeypatch):
-    main._session.cache_clear()
+    main.session_for.cache_clear()
     plain = client.get("/api/session", params={"preset": "goal_3", "lang": "it"}).json()
-    main._session.cache_clear()
+    main.session_for.cache_clear()
     monkeypatch.setenv("SOUNDPITCH_ORCHESTRATOR", "workflow")
     try:
         flow = client.get("/api/session", params={"preset": "goal_3", "lang": "it"}).json()
         sheet = client.get("/api/cuesheet", params={"preset": "goal_3", "lang": "it"})
     finally:
-        main._session.cache_clear()
+        main.session_for.cache_clear()
     assert sheet.status_code == 200
     assert {k: v for k, v in flow.items() if k != "trace"} == {k: v for k, v in plain.items() if k != "trace"}
     assert next(t["executor"] for t in flow["trace"]) == "MomentDetector"
@@ -159,30 +162,41 @@ def test_a_missing_package_is_named_with_the_command_that_installs_it(monkeypatc
     with pytest.raises(FoundryNotConfigured, match=r"pip install -r backend/requirements-agents\.txt"):
         workflow.build_session(MATCH, PRESETS["goal_1"], Profile(), TemplateDescriber())
     monkeypatch.setenv("SOUNDPITCH_ORCHESTRATOR", "workflow")
-    main._session.cache_clear()
+    main.session_for.cache_clear()
     try:
         response = client.get("/api/session")
     finally:
-        main._session.cache_clear()
+        main.session_for.cache_clear()
     assert response.status_code == 503 and response.json()["code"] == "llm_not_configured"
     assert "requirements-agents.txt" in response.json()["message"]
 
 
 def test_an_unknown_orchestrator_is_named(monkeypatch):
     monkeypatch.setenv("SOUNDPITCH_ORCHESTRATOR", "crew")
-    main._session.cache_clear()
+    main.session_for.cache_clear()
     try:
         response = client.get("/api/session")
     finally:
-        main._session.cache_clear()
+        main.session_for.cache_clear()
     assert response.status_code == 503 and "SOUNDPITCH_ORCHESTRATOR" in response.json()["message"]
 
 
 def test_the_plain_pipeline_needs_no_sdk(monkeypatch):
     monkeypatch.setitem(sys.modules, "agent_framework", None)
     monkeypatch.delenv("SOUNDPITCH_ORCHESTRATOR", raising=False)
-    main._session.cache_clear()
+    main.session_for.cache_clear()
     try:
         assert client.get("/api/session").status_code == 200
     finally:
-        main._session.cache_clear()
+        main.session_for.cache_clear()
+
+
+@needs_sdk
+def test_the_analyst_retry_runs_as_an_edge_and_matches_the_plain_pipeline():
+    from app.analysis import FlawedAnalyst
+
+    flow = workflow.build_session(MATCH, PRESETS["final_whistle"], Profile(), TemplateDescriber(), FlawedAnalyst(1))
+    plain = build_session(MATCH, PRESETS["final_whistle"], Profile(), TemplateDescriber(), FlawedAnalyst(1))
+    assert without_trace(flow) == without_trace(plain)
+    assert [t.executor for t in flow.trace][-4:] == ["Analyst", "AnalysisChecker", "Analyst", "AnalysisChecker"]
+    assert flow.analysis.status == "verified" and flow.analysis.attempts == 2 and flow.analysis.rejected > 0

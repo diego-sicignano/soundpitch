@@ -8,7 +8,7 @@ import threading
 from collections import OrderedDict
 from pathlib import Path
 
-from fastapi import FastAPI, Query, Request
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
@@ -22,6 +22,7 @@ from app.contracts import (
     Preset,
     Profile,
     Session,
+    Team,
     TtsRequest,
     VoiceSupport,
 )
@@ -75,7 +76,7 @@ SESSIONS_KEPT = 256
 
 def _keepable(session: Session) -> bool:
     """A session built during an outage or over the model's call cap is not kept: it would stay a
-    template session after the service is back. The sessions of a healthy model are, as before."""
+    template session after the service is back. The sessions of a healthy model are kept."""
     return not any(
         step.step == "describer" and (step.status == "failed" or BUDGET_NOTE in step.detail)
         for step in session.trace
@@ -95,7 +96,7 @@ def _builder(mode: str):
     raise FoundryNotConfigured("SOUNDPITCH_ORCHESTRATOR is not a supported mode (use plain or workflow)")  # never the value
 
 
-def _session(preset_id: str, profile: Profile) -> Session:
+def session_for(preset_id: str, profile: Profile) -> Session:
     mode = os.environ.get("SOUNDPITCH_ORCHESTRATOR") or "plain"
     key = (preset_id, profile, mode)
     with SESSIONS_LOCK:
@@ -111,7 +112,7 @@ def _session(preset_id: str, profile: Profile) -> Session:
     return session
 
 
-_session.cache_clear = SESSIONS.clear  # type: ignore[attr-defined]
+session_for.cache_clear = SESSIONS.clear  # type: ignore[attr-defined]  # the tests start each case from an empty cache
 
 
 @app.get("/api/health", response_model=None, responses={503: {"model": ErrorResponse}})
@@ -145,16 +146,50 @@ def get_presets() -> list[Preset]:
     return list(PRESETS.values())
 
 
+def focus_problem(focus: int | None, focus_team: Team | None) -> str | None:
+    """A club to follow is a side; a player to follow is a shirt of that side (SPEC §17)."""
+    if focus is None:
+        return None  # nothing to follow, or a whole club
+    team = {"home": MATCH.home, "away": MATCH.away}.get(focus_team or "")
+    if team is None or focus not in {p.shirt for p in team.players}:
+        return "focus needs focus_team, and the shirt must belong to that team"
+    return None
+
+
+def _focus(focus: int | None, focus_team: Team | None) -> None:
+    problem = focus_problem(focus, focus_team)
+    if problem:
+        raise HTTPException(422, problem)
+
+
 def _lookup(
-    preset: str, detail: Detail, lang: Lang, earcons: bool, calm: bool, rate: float
+    preset: str,
+    detail: Detail,
+    lang: Lang,
+    earcons: bool,
+    calm: bool,
+    rate: float,
+    focus: int | None = None,
+    focus_team: Team | None = None,
 ) -> Session | JSONResponse:
+    _focus(focus, focus_team)
     if preset not in PRESETS:
         return _error(404, "preset_not_found", f"Unknown preset: {preset}")
+    profile = Profile(
+        detail=detail,
+        lang=lang,
+        earcons=earcons,
+        calm=calm,
+        rate=round(rate, 2),  # 1.2 and 1.20004 are one session, not two cache entries
+        focus=focus,
+        focus_team=focus_team,
+    )
     try:
-        session = _session(preset, Profile(detail=detail, lang=lang, earcons=earcons, calm=calm, rate=rate))
+        session = session_for(preset, profile)
     except FoundryNotConfigured as exc:
         return _error(503, "llm_not_configured", str(exc))
-    tts.issue(session.lang, (cue.text for cue in session.cues))  # only returned text can be spoken (S22)
+    spoken = [cue.text for cue in session.cues] + session.recap.lines + [p.text for p in session.analysis.points]
+    tts.issue(session.lang, spoken)  # only returned text can be spoken (S22): cues, recap lines, analysis points
     return session
 
 
@@ -170,8 +205,10 @@ def get_session(
     earcons: bool = True,
     calm: bool = False,
     rate: float = Query(1.0, ge=0.5, le=2.0),
+    focus: int | None = Query(None, ge=1, le=99),
+    focus_team: Team | None = None,
 ):
-    return _lookup(preset, detail, lang, earcons, calm, rate)
+    return _lookup(preset, detail, lang, earcons, calm, rate, focus, focus_team)
 
 
 @app.get("/api/session.vtt", responses={404: {"model": ErrorResponse}, 503: {"model": ErrorResponse}})
@@ -182,8 +219,10 @@ def get_session_vtt(
     earcons: bool = True,
     calm: bool = False,
     rate: float = Query(1.0, ge=0.5, le=2.0),
+    focus: int | None = Query(None, ge=1, le=99),
+    focus_team: Team | None = None,
 ):
-    session = _lookup(preset, detail, lang, earcons, calm, rate)
+    session = _lookup(preset, detail, lang, earcons, calm, rate, focus, focus_team)
     if isinstance(session, JSONResponse):
         return session
     return Response(webvtt(session.cues), media_type="text/vtt")
@@ -246,8 +285,10 @@ def get_cuesheet(
     earcons: bool = True,
     calm: bool = False,
     rate: float = Query(1.0, ge=0.5, le=2.0),
+    focus: int | None = Query(None, ge=1, le=99),
+    focus_team: Team | None = None,
 ):
-    session = _lookup(preset, detail, lang, earcons, calm, rate)
+    session = _lookup(preset, detail, lang, earcons, calm, rate, focus, focus_team)
     if isinstance(session, JSONResponse):
         return session
     return cuesheet.build(session, PRESETS[preset])

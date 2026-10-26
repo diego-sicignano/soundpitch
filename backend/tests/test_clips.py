@@ -26,11 +26,11 @@ def clean(monkeypatch, tmp_path):
     monkeypatch.setattr(clips, "CLIPS_DIR", tmp_path / "audio")
     clips.reset()
     tts.reset()
-    main._session.cache_clear()
+    main.session_for.cache_clear()
     yield
     clips.reset()
     tts.reset()
-    main._session.cache_clear()
+    main.session_for.cache_clear()
 
 
 class Speech:
@@ -257,3 +257,22 @@ def test_the_committed_store_covers_every_sentence_once_it_has_content(monkeypat
         pytest.skip("no clips are committed yet (they need an approved Speech run, see docs/DEPLOY.md)")
     missing = [(lang, text) for lang, text in clips_build.sentences() if store.get(lang, text) is None]
     assert not missing, f"{len(missing)} sentences have no clip: {missing[:3]}"
+
+
+def test_the_clip_list_holds_the_summary_and_the_analysis_lines():
+    from app.clips_build import sentences
+    from app.contracts import Profile
+    from app.main import session_for
+
+    found = set(sentences())
+    session = session_for("final_whistle", Profile(lang="it"))
+    assert all(("it", line) in found for line in session.recap.lines)
+    assert all(("it", p.text) in found for p in session.analysis.points)
+
+
+def test_a_summary_line_is_issued_text_that_the_voice_endpoint_accepts():
+    from app import tts
+    from app.main import _lookup
+
+    session = _lookup("goal_1", "standard", "en", True, False, 1.0)
+    assert ("en", session.recap.lines[0]) in tts._issued and ("en", session.analysis.points[0].text) in tts._issued

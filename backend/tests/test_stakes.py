@@ -200,7 +200,11 @@ def test_the_cue_sheet_carries_the_context_and_stays_valid():
     assert [c["context"] for c in session["cues"] if c["context"]] == ["That makes it level."]
 
 
-def test_text_with_context_is_issued_for_speech_but_the_context_alone_is_not(monkeypatch):
+def test_text_with_context_is_issued_for_speech_but_the_context_alone_is_not(monkeypatch, tmp_path):
+    from app import clips
+
+    monkeypatch.setattr(clips, "CLIPS_DIR", tmp_path / "no-clips")  # the guard, not a stored clip, must answer
+    monkeypatch.setattr(clips, "_STORE", None)  # restored after the test, so others see the real clips
     monkeypatch.delenv("AZURE_SPEECH_KEY", raising=False)  # never reach Azure from a test
     monkeypatch.delenv("AZURE_SPEECH_REGION", raising=False)
     session = client.get("/api/session", params={"preset": "goal_3", "lang": "it"}).json()

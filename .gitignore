@@ -13,5 +13,9 @@ backend/data/
 *.sqlite
 *.sqlite-*
 .claude/worktrees/
-# a private copy of the Official Rules and the learning playlists; not redistributed (docs/hackathon/COMPLIANCE.md)
-docs/hackathon/_local/
+# the owner's process notes: rules summary, compliance record, submission checklist, demo plan (kept locally)
+docs/hackathon/
+docs/submission/DEMO_SCRIPT.md
+docs/tickets/T01-register.md
+docs/tickets/T07-video-and-pitch.md
+docs/tickets/T10-publish-and-submit.md

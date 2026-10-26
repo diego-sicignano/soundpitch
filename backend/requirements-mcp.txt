@@ -1,0 +1,3 @@
+# The MCP server (python -m app.mcp_server, SPEC §16): the judges' image and the tests include it (D32).
+-r requirements.txt
+mcp==1.30.0

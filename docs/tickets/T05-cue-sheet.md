@@ -1,6 +1,6 @@
 # T05. Cue sheet and JSON Schema
 
-**Status: done (2026-10-20).**  **Depends on:** none  **Acceptance:** S15  **Spec:** §13  **Decision:** D15  **Judging:** criterion 1 (clean, machine-readable output is welcome in the Render stage)
+**Status: done (2026-10-20).**  **Depends on:** none  **Acceptance:** S15  **Spec:** §13  **Decision:** D15
 
 ## Goal
 

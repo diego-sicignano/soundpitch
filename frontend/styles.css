@@ -2,6 +2,7 @@
   --bg: #0b0f14;
   --panel: #131a22;
   --line: #3a4756;
+  --control-line: #7d8da0; /* 3:1 against the field background (WCAG 1.4.11) */
   --text: #f2f5f8;
   --muted: #b4c0cc;
   --accent: #ffd60a;
@@ -173,7 +174,7 @@ input[type="range"] {
   padding: 0.5rem;
   background: #0b0f14;
   color: var(--text);
-  border: 2px solid var(--line);
+  border: 2px solid var(--control-line);
   border-radius: 0.5rem;
   font: inherit;
 }
@@ -404,6 +405,38 @@ summary {
   .panel:nth-of-type(3) {
     align-self: start; /* the pitch card is shorter than the settings: no empty stretch below it */
   }
+}
+
+.stats-wrap {
+  overflow-x: auto; /* a data table may scroll on its own at 320 px (WCAG 1.4.10); the page does not */
+}
+
+.stats {
+  width: 100%;
+  font-size: 1rem;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.stats th,
+.stats td {
+  padding: 0.4rem 0.35rem;
+  border-bottom: 1px solid var(--line);
+  text-align: right;
+}
+
+.stats th:first-child {
+  text-align: left;
+  font-weight: 600;
+}
+
+.summary ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.summary li {
+  margin-bottom: 0.4rem;
 }
 
 @media (prefers-reduced-motion: reduce) {
