@@ -51,9 +51,9 @@ The image runs `SOUNDPITCH_LLM=replay`: words that the Foundry describer and the
 
 ## Screenshots
 
-Local run in replay mode (recorded Foundry replies, no network), window "Goal 3: Northgate, minute 78", after playback. The goal sentence is verified; the italic closing sentence with the "score context" badge is written by code from the score and is not covered by the verifier.
+The live demo (replay mode: recorded Foundry replies and stored Azure voices), window "Goal 3: Northgate, minute 78", after playback. The goal sentence is verified; the italic closing sentence with the "score context" badge is written by code from the score and is not covered by the verifier.
 
-![The SoundPitch player after Goal 3, in English: the large caption, the listening settings, the pitch with the timeline of speech and silence, the match stats table, the transcript with the "checked" and "score context" badges, and the report "How it was checked".](docs/images/player-goal-en.png)
+![The SoundPitch player after Goal 3, in English: the large caption, the listening settings, the pitch with the timeline of speech and silence, the match stats table, the transcript, the summary written by code, the Analyst agent's checked points with the "checked" and "score context" badges, and the report "How it was checked".](docs/images/player-goal-en.png)
 
 ![The same window in Italian: the commentary is marked with its own language, and the score-context sentence is in Italian.](docs/images/player-goal-it.png)
 
