@@ -7,7 +7,7 @@
         "run",
         "-i",
         "--rm",
-        "ghcr.io/diego-sicignano/soundpitch:b404cd2a0342babe32716d8c7aac1203dc981c99@sha256:a478bacd77336714b8538bee36f4e56e86752b810880ea5b623dc0ec50be91cd",
+        "ghcr.io/diego-sicignano/soundpitch:021fdfb2b10442bef7b7efd92c9549d73945989d@sha256:6ea135a83e60e6a3da4565e48af2dd2ca5736c7b2b56fddd9e724e524c6c691a",
         "python",
         "-m",
         "app.mcp_server"

@@ -38,7 +38,7 @@ Each ticket lives in [`docs/tickets/`](docs/tickets/), cites the acceptance rows
 | S34 | Match recap written by code: score, goals with assists, the pressure before each goal; shown and read aloud at the end of a clip, and over MCP (D33) |
 | S35 | The Analyst agent: an Agent Framework agent on Foundry with the SoundPitch MCP tools writes studio points, each citing one recap line or the statistics of a minute; code rejects a point whose names or numbers are not in that line, retries once, and falls back to code points; a workflow step with its own retry edge (D34) |
 
-**Not done:** S14 (a real Azure Speech key; optional) and S16 (a hosted URL; optional, D26).
+**Not done:** S14's `check_speech` command (the clip tool's first clip served as that test, D35).
 
 ## Tickets
 
@@ -49,7 +49,7 @@ Each ticket lives in [`docs/tickets/`](docs/tickets/), cites the acceptance rows
 | T03 | [Agent Framework workflow](docs/tickets/T03-agent-framework-workflow.md) | T02b | S13 | **done**; S13 verified on Python 3.13 with the pinned packages |
 | T04 | [Azure AI Speech with a real key](docs/tickets/T04-azure-speech.md) | an Azure Speech resource | S14 | **done** (2026-10-26, D35): 200 clips made with `clips_build`; its first clip was the one-clip test that S14's planned `check_speech` would have run |
 | T05 | [Cue sheet and JSON Schema](docs/tickets/T05-cue-sheet.md) | none | S15 | **done** |
-| T06 | [Deploy to Azure Container Apps](docs/tickets/T06-deploy.md) | T11, T04 optional | S16 | deployed and verified once on 2026-10-21, **deleted to stop costs**; optional now (D26): the public image is the test build rule 4.8 accepts (`docs/DEPLOY.md`); no Speech clips (T04 todo) |
+| T06 | [Deploy to Azure Container Apps](docs/tickets/T06-deploy.md) | T11 | S16 | **done** (2026-10-26, D36): https://soundpitch.icywave-efb40405.italynorth.azurecontainerapps.io |
 | T11 | [Record the replay file](docs/tickets/T11-record-replay.md) | T02b, prompt frozen (model calls) | S24 | **done**: recorded again 2026-10-26, 26 replies covering 30 of 30 first-attempt requests (5 windows x 3 detail levels x 2 languages), about 0.03 USD |
 | T08 | [MCP server](docs/tickets/T08-mcp-server.md) | T03 | S17 | **done** (2026-10-26, D32) |
 | T09 | [Player focus](docs/tickets/T09-player-focus.md) | none | S18 | **done** (2026-10-26, D29) |

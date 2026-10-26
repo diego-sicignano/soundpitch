@@ -285,3 +285,11 @@ The Italian context sentences use singular verbs with a club name ("Northgate pa
 
 **Alternatives.** A live Speech key in a hosted copy (a spending risk that only the pricing tier caps, D14). Keeping the browser voice as the default (the better voice would go unheard by most judges).
 
+## D36. The demo is online again, for the judging window (2026-10-26)
+
+**Why.** A judge can click a link more easily than run `docker run`, and the hosting shows the Azure deployment the project describes.
+
+**Choice.** The tested image of `021fdfb` runs on Azure Container Apps as before (D17, D24): its own resource group in Italy North on the pay-as-you-go subscription, Consumption only, no logs destination, 0.25 vCPU and 0.5 GiB, zero to one replica, `SOUNDPITCH_TRUST_PROXY=1`. Smoke, health, stored voice clips, the workflow trace with both agents, the content security policy and the page in a browser were checked on its address (https://soundpitch.icywave-efb40405.italynorth.azurecontainerapps.io). The first request after a quiet spell waits for a replica, about 18 seconds. The cost is checked the next day; the group is deleted after judging, or at once if an unexpected meter appears (D25).
+
+**Alternatives.** One replica always on (no cold start, a few euros more). The image alone (D26).
+

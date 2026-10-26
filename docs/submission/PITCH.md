@@ -1,6 +1,6 @@
 # Project description
 
-The text for the hackathon submission (rule 4.4: what was built, which Microsoft and Azure technologies it uses, what it does, what problem it solves). Checked against the repository on 2026-10-26. It names only technologies the project actually uses. The repository is public (<https://github.com/diego-sicignano/soundpitch>). No hosted website is run: judges can run the public container image from the README ("For judges"; rule 4.8 accepts a test build).
+The text for the hackathon submission (rule 4.4: what was built, which Microsoft and Azure technologies it uses, what it does, what problem it solves). Checked against the repository on 2026-10-26. It names only technologies the project actually uses. The repository is public (<https://github.com/diego-sicignano/soundpitch>). Live demo: <https://soundpitch.icywave-efb40405.italynorth.azurecontainerapps.io> (Azure Container Apps); judges can also run the same public container image from the README ("For judges").
 
 ## One sentence
 
@@ -27,9 +27,9 @@ Every row is true today and points to real code.
 | Microsoft Foundry | The describer model; the demo replays its recorded replies | `backend/app/foundry.py`, `replay.py` | **Used**: the describer and the Analyst agent were recorded live on 2026-10-26 (`docs/evidence/foundry-run.md`, `docs/evidence/analyst-run.md`). The describer writes within a verified vocabulary, about 29% of the spoken cues are in its own words, every one verified at the first attempt; their words are verified again whenever a session is built |
 | Microsoft Agent Framework | `FoundryChatClient`; a workflow graph with a retry edge and a fallback | `backend/app/foundry.py`, `workflow.py` | **Used, and the demo runs it**: `FoundryChatClient` made the recorded calls, and the judges' image builds every session through the workflow (`SOUNDPITCH_ORCHESTRATOR=workflow`, D31): MomentDetector, Describer, Verifier, Fallback and TimingPlanner executors with a conditional retry edge, each named in the page's pipeline steps. One executor uses a model; the others are deterministic code |
 | Model Context Protocol | The match as read-only tools for an AI agent: presets, match, moments, the verified commentary, statistics | `backend/app/mcp_server.py`, `.vscode/mcp.json` | **Used**: official MCP Python SDK (FastMCP); the judges' image serves it with `docker run -i --rm <image> python -m app.mcp_server`, and `.vscode/mcp.json` connects GitHub Copilot agent mode to it. An agent gets only verified sentences and numbers counted by code (D32) |
-| GitHub Actions | Tests, SDK tests, image build and smoke, and the image publish | `.github/workflows/ci.yml` | **Used**: all five jobs (backend, SDK, end-to-end, Docker, publish) green on commit `b404cd2` ([run](https://github.com/diego-sicignano/soundpitch/actions/runs/40340935978)) |
+| GitHub Actions | Tests, SDK tests, image build and smoke, and the image publish | `.github/workflows/ci.yml` | **Used**: all five jobs (backend, SDK, end-to-end, Docker, publish) green on commit `021fdfb` ([run](https://github.com/diego-sicignano/soundpitch/actions/runs/40385346831)) |
 
-Azure AI Speech: 200 stored clips made once with Azure AI Speech neural voices (`en-GB-RyanNeural`, `it-IT-DiegoNeural`) on 26 Oct 2026, served by the image with no key. Built but not in use today: Azure Container Apps hosting (deployed and verified once on 2026-10-21, then deleted to stop costs; `docs/DEPLOY.md`).
+Azure AI Speech: 200 stored clips made once with Azure AI Speech neural voices (`en-GB-RyanNeural`, `it-IT-DiegoNeural`) on 26 Oct 2026, served by the image with no key. Azure Container Apps hosts the live demo (https://soundpitch.icywave-efb40405.italynorth.azurecontainerapps.io): the same image, Consumption only, scale to zero, no secret (`docs/DEPLOY.md`).
 
 ## What problem it solves, for whom
 

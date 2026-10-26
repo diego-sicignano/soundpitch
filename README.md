@@ -10,14 +10,15 @@ Built for the [Microsoft x Premier League "Inside the Game" hackathon](https://g
 
 - 0 of about 13,000 planted errors (wrong player, wrong team, wrong score, a stray number, an opinion, an emoji) got past the verifier.
 - 0 overlapping cues, and all 960 must-say moments (goals, kick-offs, whistles) spoken.
-- The live model run on 20 Oct 2026: every reply checked, and a wrong reply never spoken, because after two retries a template that always passes takes over.
+- The recorded Foundry describer: 162 of 162 moments verified at the first attempt, about 29% of the cues in the model's own words.
+- The Analyst agent's recording: 34 of its points were refused by the check (a number or a name not in the cited line, an invented source) and never shown; every window kept two to four checked points.
 
 ## For judges
 
-Nothing to sign up for and nothing to pay for. Run the tested image, which works offline in replay mode:
+**Open the live demo: <https://soundpitch.icywave-efb40405.italynorth.azurecontainerapps.io>** (Azure Container Apps; nothing to sign up for or pay for; the first load after a quiet spell takes about 20 seconds while a replica starts). Or run the same tested image, offline:
 
 ```
-docker run -p 8000:8000 ghcr.io/diego-sicignano/soundpitch:b404cd2a0342babe32716d8c7aac1203dc981c99@sha256:a478bacd77336714b8538bee36f4e56e86752b810880ea5b623dc0ec50be91cd
+docker run -p 8000:8000 ghcr.io/diego-sicignano/soundpitch:021fdfb2b10442bef7b7efd92c9549d73945989d@sha256:6ea135a83e60e6a3da4565e48af2dd2ca5736c7b2b56fddd9e724e524c6c691a
 ```
 
 The image is published for `linux/amd64`; on an Apple Silicon Mac add `--platform linux/amd64` (Docker's emulation, slower start). Its CI run and digest check: [`docs/DEPLOY.md`](docs/DEPLOY.md). Or use GitHub Codespaces or a local clone ("Run it" below). Then, on <http://localhost:8000>:
@@ -31,7 +32,7 @@ The image is published for `linux/amd64`; on an Apple Silicon Mac add `--platfor
 7. The same session as JSON for a graphics or captioning system: <http://localhost:8000/api/cuesheet?preset=goal_1> and its [JSON Schema](docs/contracts/cuesheet.v1.schema.json).
 8. To see the safety net, start a second container with `-e SOUNDPITCH_LLM=always_bad -p 8001:8000` and open <http://localhost:8001>: every model sentence is wrong, the verifier rejects it three times and a verified template speaks.
 
-The image runs `SOUNDPITCH_LLM=replay`: words that the Foundry model wrote on 20 Oct 2026, recorded and checked again by the verifier each time a session is built. It needs no key and makes no model call, so it costs nothing however many people use it (D12). A hosted copy on Azure Container Apps was deployed and verified once, then deleted to stop costs ([`docs/DEPLOY.md`](docs/DEPLOY.md)).
+The image runs `SOUNDPITCH_LLM=replay`: words that the Foundry describer and the Analyst agent wrote on 26 Oct 2026, recorded and checked again each time a session is built, and stored Azure AI Speech clips. It needs no key and makes no model or Speech call, so it costs nothing however many people use it (D12, D35). The live demo runs this image on Azure Container Apps (D36, [`docs/DEPLOY.md`](docs/DEPLOY.md)).
 
 ## What it does
 
@@ -55,6 +56,39 @@ Local run in replay mode (recorded Foundry replies, no network), window "Goal 3:
 ![The SoundPitch player after Goal 3, in English: the large caption, the listening settings, the pitch with the timeline of speech and silence, the match stats table, the transcript with the "checked" and "score context" badges, and the report "How it was checked".](docs/images/player-goal-en.png)
 
 ![The same window in Italian: the commentary is marked with its own language, and the score-context sentence is in Italian.](docs/images/player-goal-it.png)
+
+## Architecture
+
+```mermaid
+flowchart LR
+  E[Synthetic match events] --> M[MomentDetector]
+  M --> D["Describer agent<br/>(Microsoft Foundry)"]
+  D --> V{"Verifier<br/>(code)"}
+  V -- rejected: retry with issues --> D
+  V -- 3rd failure --> F[Verified template]
+  V -- accepted --> T[TimingPlanner]
+  F --> T
+  T --> A["Analyst agent<br/>(Foundry, MCP tools)"]
+  A --> C{"AnalysisChecker<br/>(code)"}
+  C -- rejected: retry once --> A
+  C --> S[Session: cues, ball sounds, stats, recap, analysis]
+  S --> P[Accessible page + Azure AI Speech voices]
+  S --> Q[Cue sheet JSON for graphics and captions]
+  S --> R[MCP server for GitHub Copilot and other agents]
+```
+
+Every arrow is an executor of one Microsoft Agent Framework workflow (`backend/app/workflow.py`), the graph the judges' image runs. The two agents choose words; the two code checkers decide what may be said.
+
+## Enterprise readiness
+
+- **Nothing unverified reaches a listener.** Every description is checked against the match events; every analysis point against the one line it cites; a failure is retried with its issues, then replaced by output that always passes (`SPEC.md` §5, §20).
+- **Auditable.** Each session carries its trace (which executor did what, at which attempt, and why a sentence was refused) and a report the page shows; `docs/evidence/` holds the recorded model runs.
+- **Cost under control.** A durable ledger reserves the worst case of every model call before it is sent and fails closed (D11); the judges' path replays recorded replies and stored voice clips, so it makes no model or Speech call however many people use it (D12, D35).
+- **Secure by default.** One read-only, non-root container with no key and no outbound call; a content security policy and security headers on every response; the voice endpoint speaks only text the server issued (S22, S25).
+- **Integrates.** A versioned cue sheet with a JSON Schema for graphics and captioning systems, WebVTT captions, and read-only MCP tools for AI agents (`SPEC.md` §13, §16).
+- **Tested.** About 475 backend tests, 31 browser tests with axe-core, an SDK job and a container smoke test in CI; the published image is pinned by digest.
+
+**Path to production.** Feed the real event stream into the `Event` contract (the synthetic generator is the only producer today); keep the verifier and the checkers as the gate; record or call the describer and the Analyst under the ledger; host the same image on Azure Container Apps (`docs/DEPLOY.md`); pre-generate the neural voice clips for each match's sentences, or call Azure AI Speech behind the existing limits.
 
 ## How it works
 
@@ -89,9 +123,9 @@ Only code decides **what is true** and **when it is said**; a model only chooses
 | Microsoft Foundry (`gpt-4.1-mini`, Global Standard) | `foundry.py` writes the words; evidence in [`docs/evidence/foundry-run.md`](docs/evidence/foundry-run.md) | the describer was recorded on 26 Oct 2026 (26 replies, about 0.03 USD): about 29% of the spoken cues are in its own words, every one verified at the first attempt; the Analyst agent's replies were recorded the same day ([`docs/evidence/analyst-run.md`](docs/evidence/analyst-run.md)) |
 | Microsoft Agent Framework | `FoundryChatClient` in `foundry.py`; the workflow graph in `workflow.py` | **the judges' image runs every session through the workflow** (MomentDetector, Describer, Verifier, Fallback, TimingPlanner, with a conditional retry edge; D31); one executor uses a model, the others are code |
 | Azure AI Speech | `tts.py`, `clips.py`, `clips_build.py` | **used**: 200 stored clips made once with Azure AI Speech neural voices (`en-GB-RyanNeural`, `it-IT-DiegoNeural`) on 26 Oct 2026, about USD 0.20; served from the image with no Speech key, only for text the server issued (S22, S26) |
-| Azure Container Apps | `Dockerfile`, [`docs/DEPLOY.md`](docs/DEPLOY.md) | deployed and verified once on 2026-10-21 (Consumption only, scale to zero, one replica at most, replay mode, no secret), then deleted to stop costs; **not hosted now** |
+| Azure Container Apps | `Dockerfile`, [`docs/DEPLOY.md`](docs/DEPLOY.md) | **hosts the live demo** (<https://soundpitch.icywave-efb40405.italynorth.azurecontainerapps.io>): Consumption only, scale to zero, one replica at most, replay mode, no secret (D36) |
 | Model Context Protocol | `mcp_server.py` (official MCP Python SDK), `.vscode/mcp.json` | read-only tools for GitHub Copilot agent mode or any MCP client, served by the judges' image (D32) |
-| GitHub Actions | `.github/workflows/ci.yml` | backend, SDK, end-to-end and Docker jobs green on `b404cd2` ([run](https://github.com/diego-sicignano/soundpitch/actions/runs/40340935978)); the same run published the image to GHCR |
+| GitHub Actions | `.github/workflows/ci.yml` | backend, SDK, end-to-end and Docker jobs green on `021fdfb` ([run](https://github.com/diego-sicignano/soundpitch/actions/runs/40385346831)); the same run published the image to GHCR |
 
 ## Run it
 
