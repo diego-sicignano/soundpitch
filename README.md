@@ -15,6 +15,8 @@ Built for the [Microsoft x Premier League "Inside the Game" hackathon](https://g
 
 ## For judges
 
+**Demo video (1:48): <https://youtu.be/PofNVUm9mS8>**
+
 **Open the live demo: <https://soundpitch.icywave-efb40405.italynorth.azurecontainerapps.io>** (Azure Container Apps; nothing to sign up for or pay for; the first load after a quiet spell takes about 20 seconds while a replica starts). Or run the same tested image, offline:
 
 ```
