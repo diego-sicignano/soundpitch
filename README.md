@@ -192,7 +192,7 @@ docker build -t soundpitch .
 docker run -p 8000:8000 soundpitch
 ```
 
-The image runs `SOUNDPITCH_LLM=replay` and `SOUNDPITCH_ORCHESTRATOR=workflow` as a non-root user, read-only, with no key and no network needed; CI repeats the read-only, no-capability and smoke checks. No Azure voice clips exist yet, so the page speaks with the browser voice. Each tested commit's image is published on GHCR (`ghcr.io/diego-sicignano/soundpitch:<commit sha>`, public, `linux/amd64`). Deployment: [`docs/DEPLOY.md`](docs/DEPLOY.md).
+The image runs `SOUNDPITCH_LLM=replay` and `SOUNDPITCH_ORCHESTRATOR=workflow` as a non-root user, read-only, with no key and no network needed; CI repeats the read-only, no-capability and smoke checks. The stored Azure AI Speech clips are in the image, so the page speaks with the neural voice offline. Each tested commit's image is published on GHCR (`ghcr.io/diego-sicignano/soundpitch:<commit sha>`, public, `linux/amd64`). Deployment: [`docs/DEPLOY.md`](docs/DEPLOY.md).
 
 ## Honest limits
 
@@ -209,7 +209,7 @@ This project was built with an AI coding assistant (Claude Code). I directed the
 ## Repository map
 
 ```
-SPEC.md            behaviour, test ids, acceptance rows S1-S33
+SPEC.md            behaviour, test ids, acceptance rows S1-S35
 CONTEXT.md         glossary and the map of the data contracts
 ROADMAP.md         done, tickets, known limits
 CLAUDE.md          instructions for the coding assistant used on this repo
